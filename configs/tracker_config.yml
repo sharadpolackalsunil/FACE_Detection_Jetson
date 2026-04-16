@@ -1,0 +1,11 @@
+BaseConfig:
+  tracker-width: 640
+  tracker-height: 384
+  gpu-id: 0
+  # target-tracking-error-thresh regulates tracker error threshold
+  target-tracking-error-thresh: 0.1
+
+IOU:
+  # The IOU Tracker utilizes IoU (Intersection over Union) of bounding boxes.
+  # CPU-based by default to save GPU memory.
+  use-cpu: 1

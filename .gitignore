@@ -1,0 +1,21 @@
+# Models and DeepStream engine caches
+models/
+*.onnx
+*.engine
+*.pt
+
+# Virtual Environments
+venv/
+ds_venv/
+
+# Database Files
+*.db
+*.db-journal
+
+# Compiled C++ custom parsers
+*.so
+nvdsinfer_custom_impl_Yolo/
+
+# Python caches
+__pycache__/
+*.pyc
