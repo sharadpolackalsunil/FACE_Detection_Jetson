@@ -27,21 +27,25 @@ def main():
     os.makedirs('models', exist_ok=True)
 
     # 1. YOLOv8
-    print("Preparing YOLOv8 model...")
-    if ULTRA_AVAILABLE:
-        try:
-            model = YOLO("yolov8n.pt") 
-            print("Exporting YOLOv8n to ONNX format...")
-            # Note: imgsz=640 is standard
-            model.export(format="onnx", imgsz=640, simplify=True)
-            
-            if os.path.exists("yolov8n.onnx"):
-                os.replace("yolov8n.onnx", "models/yolov8n-face.onnx")
-                print("Successfully created models/yolov8n-face.onnx")
-        except Exception as e:
-            print(f"YOLO export failed: {e}")
+    yolo_onnx_path = "models/yolov8n-face.onnx"
+    if os.path.exists(yolo_onnx_path):
+        print(f"{yolo_onnx_path} already exists. Skipping YOLO export.")
     else:
-        print("Skipping YOLO export due to missing ultralytics.")
+        print("Preparing YOLOv8 model...")
+        if ULTRA_AVAILABLE:
+            try:
+                model = YOLO("yolov8n.pt") 
+                print("Exporting YOLOv8n to ONNX format...")
+                # Note: imgsz=640 is standard
+                model.export(format="onnx", imgsz=640, simplify=True)
+                
+                if os.path.exists("yolov8n.onnx"):
+                    os.replace("yolov8n.onnx", yolo_onnx_path)
+                    print(f"Successfully created {yolo_onnx_path}")
+            except Exception as e:
+                print(f"YOLO export failed: {e}")
+        else:
+            print("Skipping YOLO export due to missing ultralytics.")
 
     # 2. MobileFaceNet (Dummy representation for stable pipeline testing)
     print("Preparing embedding model validation...")
