@@ -438,12 +438,13 @@ def main(args):
     else:
         nvosd.link(sink)
 
-    # ---- Probe on OSD for recognition logic ---- #
-    osd_sink_pad = nvosd.get_static_pad("sink")
-    if not osd_sink_pad:
-        sys.stderr.write("Unable to get sink pad of nvosd\n")
+    # ---- Probe on SGIE source pad for recognition logic ---- #
+    # It is MUCH better to do this before the tiler merges frame metadata
+    sgie_src_pad = sgie.get_static_pad("src")
+    if not sgie_src_pad:
+        sys.stderr.write("Unable to get src pad of sgie\n")
     else:
-        osd_sink_pad.add_probe(
+        sgie_src_pad.add_probe(
             Gst.PadProbeType.BUFFER, osd_sink_pad_buffer_probe, 0)
 
     # ---- Run ---- #

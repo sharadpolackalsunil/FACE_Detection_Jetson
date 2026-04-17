@@ -1,8 +1,8 @@
 [property]
 gpu-id=0
 # Listen specifically to the YOLO detector (ID 1)
-# operate-on-gie-id=1
-# operate-on-class-ids=0
+operate-on-gie-id=1
+operate-on-class-ids=0
 gie-unique-id=2
 
 # FaceNet Normalization: (x - 127.5) * 0.0078125
@@ -18,9 +18,9 @@ process-mode=2
 network-mode=2
 # CRITICAL: Must be 1 for Python embeddings
 output-tensor-meta=1
-batch-size=16
+batch-size=1
 infer-dims=3;112;112
 network-type=100
 
-input-object-min-width=8
-input-object-min-height=8
+input-object-min-width=16
+input-object-min-height=16
