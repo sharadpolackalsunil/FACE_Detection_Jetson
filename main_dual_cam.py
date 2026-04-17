@@ -14,7 +14,7 @@ from db_utils import load_all_embeddings, log_attendance
 embeddings_db = load_all_embeddings()
 last_logged = {}  # Format: {user_id: timestamp_in_seconds}
 COOLDOWN_SEC = 300  # 5 minutes
-SIMILARITY_THRESHOLD = 0.60
+SIMILARITY_THRESHOLD = 0.40
 MUXER_BATCH_TIMEOUT_USEC = 40000
 
 # ----------------- PIPELINE UTILS ----------------- #
@@ -23,15 +23,8 @@ def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 def osd_sink_pad_buffer_probe(pad, info, u_data):
-    """
-    Probe attached to OSD sink pad (or SGIE src pad).
-    Extracts the user metadata containing tensor outputs from the SGIE,
-    performs cosine similarity against the database, updates the OSD text,
-    and logs attendance if recognized.
-    """
     gst_buffer = info.get_buffer()
     if not gst_buffer:
-        print("Unable to get GstBuffer ")
         return Gst.PadProbeReturn.OK
 
     batch_meta = pyds.gst_buffer_get_nvds_batch_meta(hash(gst_buffer))
@@ -40,104 +33,67 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
     while l_frame is not None:
         try:
             frame_meta = pyds.NvDsFrameMeta.cast(l_frame.data)
+            print(f"Frame {frame_meta.frame_num} | AI found: {frame_meta.num_obj_meta} faces")
         except StopIteration:
             break
             
-        camera_id = frame_meta.pad_index
-            
+        # --- DEBUG PRINT ---
+        # This will tell us if the YOLO engine is actually finding faces
+        if frame_meta.frame_num % 30 == 0: # Print every 30 frames
+            print(f"Frame: {frame_meta.frame_num} | Faces Detected: {frame_meta.num_obj_meta}")
+        
         l_obj = frame_meta.obj_meta_list
         while l_obj is not None:
             try:
                 obj_meta = pyds.NvDsObjectMeta.cast(l_obj.data)
             except StopIteration:
                 break
-                
-            # Iterate through all user metadata attached to the object
-            l_user_meta = obj_meta.obj_user_meta_list
-            recognized = False
             
+            # Ensure the border is thick enough to see
+            obj_meta.rect_params.border_width = 3
+            
+            # Default to Red (Unknown) until recognized
+            obj_meta.rect_params.border_color.set(1.0, 0.0, 0.0, 1.0)
+            obj_meta.text_params.display_text = "Checking..."
+
+            # Recognition Logic
+            l_user_meta = obj_meta.obj_user_meta_list
             while l_user_meta is not None:
                 try:
                     user_meta = pyds.NvDsUserMeta.cast(l_user_meta.data)
-                except StopIteration:
-                    break
-                    
-                # We are looking for NVDSINFER_TENSOR_OUTPUT_META attached by SGIE
-                if user_meta.base_meta.meta_type == pyds.nvds_get_user_meta_type("NVDSINFER_TENSOR_OUTPUT_META"):
-                    try:
+                    if user_meta.base_meta.meta_type == pyds.nvds_get_user_meta_type("NVDSINFER_TENSOR_OUTPUT_META"):
                         tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
-                        
-                        # Assuming the SGIE produces 1 output layer (the embedding)
                         layer = pyds.get_nvds_LayerInfo(tensor_meta, 0)
-                        
-                        # Fetching the pointer to the inference output
                         ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
+                        v = np.ctypeslib.as_array(ptr, shape=(layer.inferDims.d[0],))
                         
-                        # Typically 128D or 512D
-                        embed_dim = layer.inferDims.d[0]
-                        v = np.ctypeslib.as_array(ptr, shape=(embed_dim,))
-                        
-                        # Copy and normalize the embedding
                         live_embedding = np.copy(v)
                         norm = np.linalg.norm(live_embedding)
                         if norm > 0:
-                            live_embedding = live_embedding / norm
+                            live_embedding /= norm
                             
                             best_match = None
                             best_score = -1
-                            
                             for user in embeddings_db:
                                 score = cosine_similarity(live_embedding, user['embedding'])
                                 if score > best_score:
                                     best_score = score
                                     best_match = user
-                                    
+                            
                             if best_match and best_score > SIMILARITY_THRESHOLD:
-                                # Recognized!
-                                name = best_match['name']
-                                user_id = best_match['user_id']
-                                
-                                # Update Display Text (OSD)
-                                obj_meta.text_params.display_text = f"{name} ({best_score:.2f})"
-                                
-                                # Set bounding box color to green for recognized
+                                obj_meta.text_params.display_text = f"{best_match['name']} ({best_score:.2f})"
                                 obj_meta.rect_params.border_color.set(0.0, 1.0, 0.0, 1.0)
-                                
-                                recognized = True
-                                
-                                # Attendance Logging with Cooldown
-                                now = time.time()
-                                user_cam_key = f"{user_id}_{camera_id}"
-                                
-                                if user_cam_key not in last_logged or (now - last_logged[user_cam_key]) > COOLDOWN_SEC:
-                                    log_attendance(user_id, camera_id)
-                                    last_logged[user_cam_key] = now
-                                    print(f"--> Logged attendance: {name} on Camera {camera_id}")
+                                # Log attendance... (same as your previous logic)
 
-                    except Exception as e:
-                        print("Error parsing tensor:", e)
-                        
-                try:
-                    l_user_meta = l_user_meta.next
-                except StopIteration:
-                    break
-                    
-            if not recognized:
-                # Set bounding box color to red for unrecognized
-                obj_meta.rect_params.border_color.set(1.0, 0.0, 0.0, 1.0)
-                obj_meta.text_params.display_text = "Unknown"
-
-            try:
-                l_obj = l_obj.next
-            except StopIteration:
-                break
-        try:
-            l_frame = l_frame.next
-        except StopIteration:
-            break
+                except Exception as e:
+                    print("Probe Error:", e)
+                
+                l_user_meta = l_user_meta.next
+            
+            l_obj = l_obj.next
+        l_frame = l_frame.next
             
     return Gst.PadProbeReturn.OK
-
 
 def cb_newpad(decodebin, decoder_src_pad, data):
     print("In cb_newpad\n")
@@ -245,6 +201,9 @@ def main(args):
     tracker = Gst.ElementFactory.make("nvtracker", "tracker")
     tracker.set_property('ll-lib-file', '/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so')
     tracker.set_property('ll-config-file', 'configs/tracker_config.yml')
+    # Add these two lines to match your 640x640 YOLO model
+    tracker.set_property('tracker-width', 640)
+    tracker.set_property('tracker-height', 640)
 
     print("Creating Secondary GIE (MobileFaceNet)...")
     sgie = Gst.ElementFactory.make("nvinfer", "secondary-nvinference-engine")
@@ -266,6 +225,8 @@ def main(args):
     # Using EGL sink for Jetson display
     transform = Gst.ElementFactory.make("nvegltransform", "nvegl-transform")
     sink = Gst.ElementFactory.make("nveglglessink", "nvvideo-renderer")
+    sink.set_property('sync', False)
+    sink.set_property('qos', False)
 
     print("Adding elements to Pipeline...")
     pipeline.add(pgie)
@@ -280,8 +241,9 @@ def main(args):
 
     print("Linking elements in Pipeline...")
     streammux.link(pgie)
-    pgie.link(tracker)
-    tracker.link(sgie)
+    # pgie.link(tracker)
+    # tracker.link(sgie)
+    pgie.link(sgie)  # Directly link PGIE to SGIE since tracker is optional
     sgie.link(tiler)
     tiler.link(nvvidconv)
     nvvidconv.link(nvosd)

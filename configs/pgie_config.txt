@@ -2,18 +2,30 @@
 gpu-id=0
 net-scale-factor=0.0039215697906911373
 model-color-format=0
-onnx-file=../models/yolov8n-face.onnx
-model-engine-file=../models/yolov8n-face.onnx_b2_gpu0_fp16.engine
-# Set FP16 mode
+onnx-file=/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx
+model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine
+labelfile-path=/home/blackbox/FACE_Detection_Jetson/labels.txt
+
+# Detection Parameters
 network-mode=2
 num-detected-classes=1
-# batch-size should match the nvstreammux
-batch-size=2
 gie-unique-id=1
-# Enable custom parser logic
+output-blob-names=output0
+# 0 = Detector, 100 = Other
+network-type=0
+# 2 = NMS (Required for YOLO)
+cluster-mode=2
+maintain-aspect-ratio=1
+force-implicit-batch-dim=1
+batch-size=1
+interval=0
+
+# Custom Parser Settings
 parse-bbox-func-name=NvDsInferParseYolo
-custom-lib-path=../libnvds_infercustomparser_yolov8.so
-interval = 2
+custom-lib-path=/home/blackbox/FACE_Detection_Jetson/libnvds_infercustomparser_yolov8.so
+
 [class-attrs-all]
+# Floor threshold to ensure visibility
+pre-cluster-threshold=0.01
 nms-iou-threshold=0.45
-pre-cluster-threshold=0.25
+topk=20

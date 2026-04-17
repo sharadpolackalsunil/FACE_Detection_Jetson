@@ -1,23 +1,26 @@
 [property]
 gpu-id=0
-# SGIE uses the cropped bounding box from the PGIE
+# Listen specifically to the YOLO detector (ID 1)
 operate-on-gie-id=1
 operate-on-class-ids=0
+gie-unique-id=2
+
+# FaceNet Normalization: (x - 127.5) * 0.0078125
 net-scale-factor=0.0078125
 offsets=127.5;127.5;127.5
 model-color-format=0
-onnx-file=../models/w600k_mbf.onnx
-model-engine-file=../models/w600k_mbf.onnx_b2_gpu0_fp16.engine
-# Secondary inference engine mode
+
+onnx-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx
+model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b1_gpu0_fp16.engine
+
+# Secondary Mode Configuration
 process-mode=2
-# Set FP16 mode
 network-mode=2
-# CRITICAL: We need tensor output to extract embeddings in Python
+# CRITICAL: Must be 1 for Python embeddings
 output-tensor-meta=1
-batch-size=2
-gie-unique-id=2
-# Network input shape. Assume MobileFaceNet uses 112x112
+batch-size=1
 infer-dims=3;112;112
-# Ignore very small faces that won't yield reliable embeddings
+network-type=100
+
 input-object-min-width=32
 input-object-min-height=32

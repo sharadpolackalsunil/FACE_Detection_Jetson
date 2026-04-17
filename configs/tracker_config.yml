@@ -1,11 +1,15 @@
-BaseConfig:
-  tracker-width: 640
-  tracker-height: 384
-  gpu-id: 0
-  # target-tracking-error-thresh regulates tracker error threshold
-  target-tracking-error-thresh: 0.1
+%YAML:1.0
 
-IOU:
-  # The IOU Tracker utilizes IoU (Intersection over Union) of bounding boxes.
-  # CPU-based by default to save GPU memory.
-  use-cpu: 1
+BaseConfig:
+  minDetectorConfidence: 0.1      # Don't drop boxes the AI is unsure about
+  maxTargetsPerStream: 20         # Max faces to track at once
+  # These must match your PGIE inference dimensions
+  trackerWidth: 640               
+  trackerHeight: 640
+  gpuId: 0
+
+IOUTracker:
+  # The IOU tracker is great for Nano because it uses very little GPU
+  iouThreshold: 0.2               # Lower this to make tracking "stickier"
+  minConsecutiveFrames: 1         # Show the box IMMEDIATELY (don't wait)
+  maxWaitFramesForSpatioTemporalConfidence: 3
