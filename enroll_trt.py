@@ -18,24 +18,36 @@ from db_utils import init_db, save_embedding
 # ---------- CONFIG ---------- #
 MODEL_PATH = "models/w600k_mbf.onnx"
 
-
 def preprocess_face(img):
-    """
-    MUST match SGIE config exactly:
-      model-color-format=0         -> BGR (do NOT convert to RGB)
-      net-scale-factor=0.0078125   -> 1/128
-      offsets=127.5;127.5;127.5
-      infer-dims=3;112;112
-
-    Formula per pixel: (pixel - 127.5) / 128.0
-    """
     img = cv2.resize(img, (112, 112))
-    # IMPORTANT: Keep BGR — matches sgie_config model-color-format=0
+    
+    # --- ADD THIS LINE ---
+    # Convert BGR to RGB to match DeepStream's model-color-format=0
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
     img = img.astype(np.float32)
     img = (img - 127.5) / 128.0
     img = np.transpose(img, (2, 0, 1))  # HWC -> CHW
     img = np.expand_dims(img, axis=0)   # (1, 3, 112, 112)
     return np.ascontiguousarray(img, dtype=np.float32)
+
+# def preprocess_face(img):
+#     """
+#     MUST match SGIE config exactly:
+#       model-color-format=0         -> BGR (do NOT convert to RGB)
+#       net-scale-factor=0.0078125   -> 1/128
+#       offsets=127.5;127.5;127.5
+#       infer-dims=3;112;112
+
+#     Formula per pixel: (pixel - 127.5) / 128.0
+#     """
+#     img = cv2.resize(img, (112, 112))
+#     # IMPORTANT: Keep BGR — matches sgie_config model-color-format=0
+#     img = img.astype(np.float32)
+#     img = (img - 127.5) / 128.0
+#     img = np.transpose(img, (2, 0, 1))  # HWC -> CHW
+#     img = np.expand_dims(img, axis=0)   # (1, 3, 112, 112)
+#     return np.ascontiguousarray(img, dtype=np.float32)
 
 
 def enroll(image_path, name):
