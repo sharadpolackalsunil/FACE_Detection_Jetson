@@ -392,18 +392,17 @@ def main(args):
 
     # ---- Add everything to pipeline ---- #
     print("Adding elements to Pipeline...")
-    for elem in [pgie, tracker, sgie, tiler, nvvidconv, nvosd]:
+    for elem in [pgie, sgie, tiler, nvvidconv, nvosd]:
         pipeline.add(elem)
     if transform:
         pipeline.add(transform)
     pipeline.add(sink)
 
-    # ---- Link the full GPU pipeline ---- #
-    # streammux → pgie → tracker → sgie → tiler → nvvidconv → nvosd → sink
+    # ---- Link the pipeline ---- #
+    # streammux → pgie → sgie → tiler → nvvidconv → nvosd → sink
     print("Linking elements in Pipeline...")
     streammux.link(pgie)
-    pgie.link(tracker)
-    tracker.link(sgie)
+    pgie.link(sgie)
     sgie.link(tiler)
     tiler.link(nvvidconv)
     nvvidconv.link(nvosd)
