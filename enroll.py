@@ -17,7 +17,7 @@ def preprocess_face(img):
     img = (img - 127.5) / 128.0
     return img.astype(np.float32)
 
-def enroll(image_path, name, model_path="models/w600kmbf.onnx"):
+def enroll(image_path, name, model_path="models/w600k_mbf.onnx"):
     """
     Extracts embedding from an image and saves it to the SQLite DB.
     Note: For a robust system, an offline face detector (like RetinaFace/YOLO) 

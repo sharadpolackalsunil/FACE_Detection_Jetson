@@ -6,8 +6,8 @@ operate-on-class-ids=0
 net-scale-factor=0.0078125
 offsets=127.5;127.5;127.5
 model-color-format=0
-onnx-file=../models/w600kmbf.onnx
-model-engine-file=../models/w600kmbf.onnx_b2_gpu0_fp16.engine
+onnx-file=../models/w600k_mbf.onnx
+model-engine-file=../models/w600k_mbf.onnx_b2_gpu0_fp16.engine
 # Secondary inference engine mode
 process-mode=2
 # Set FP16 mode
