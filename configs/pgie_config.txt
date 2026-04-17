@@ -25,6 +25,8 @@ parse-bbox-func-name=NvDsInferParseYolo
 custom-lib-path=/home/blackbox/FACE_Detection_Jetson/libnvds_infercustomparser_yolov8.so
 
 [class-attrs-all]
+# Floor threshold to ensure visibility
+pre-cluster-threshold=0.15
 # Raised threshold back up to prevent GPU freeze
 pre-cluster-threshold=0.15
 nms-iou-threshold=0.45
