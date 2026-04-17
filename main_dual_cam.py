@@ -15,7 +15,7 @@ from db_utils import load_all_embeddings, log_attendance
 frame_counter = 0
 
 # ----------------- GLOBALS & CONSTANTS ----------------- #
-COOLDOWN_SEC = 300        # 5 minutes between re-logging same person
+COOLDOWN_SEC = 5        # 5 minutes between re-logging same person
 SIMILARITY_THRESHOLD = 0.40
 MUXER_BATCH_TIMEOUT_USEC = 40000
 
