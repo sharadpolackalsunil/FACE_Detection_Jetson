@@ -10,75 +10,32 @@ import pyds
 
 from db_utils import load_all_embeddings, log_attendance
 
-# -------- Try CuPy for GPU-accelerated matching, fallback to NumPy -------- #
-try:
-    import cupy as cp
-    GPU_MATCHING = True
-    print("[INFO] CuPy found — embedding matching will run on GPU")
-except ImportError:
-    GPU_MATCHING = False
-    print("[WARN] CuPy not found — embedding matching will run on CPU (NumPy)")
-
 # ----------------- GLOBALS & CONSTANTS ----------------- #
 COOLDOWN_SEC = 300        # 5 minutes between re-logging same person
 SIMILARITY_THRESHOLD = 0.40
 MUXER_BATCH_TIMEOUT_USEC = 40000
 
-last_logged = {}  # Format: {user_id: timestamp_in_seconds}
+last_logged = {}          # {user_id: timestamp}
+fps_streams = {}          # {source_id: {last_time, frame_count, fps}}
 
-# Load embeddings from SQLite and optionally move them to GPU
-_raw_db = load_all_embeddings()
+# Load enrolled embeddings from SQLite
+embeddings_db = load_all_embeddings()
+print(f"[INFO] Loaded {len(embeddings_db)} enrolled face(s) from database")
 
-if GPU_MATCHING and len(_raw_db) > 0:
-    # Build a single GPU matrix (N x dim) for batched cosine similarity
-    _emb_matrix_np = np.stack([u['embedding'] for u in _raw_db], axis=0)  # (N, 128/512)
-    emb_matrix_gpu = cp.asarray(_emb_matrix_np, dtype=cp.float32)         # on GPU
-    # Pre-compute norms once
-    emb_norms_gpu = cp.linalg.norm(emb_matrix_gpu, axis=1, keepdims=True)
-    # Avoid division by zero
-    emb_norms_gpu = cp.maximum(emb_norms_gpu, 1e-8)
-    emb_matrix_gpu_normed = emb_matrix_gpu / emb_norms_gpu
-    embeddings_db = _raw_db  # keep metadata (names, ids)
-    print(f"[INFO] Loaded {len(embeddings_db)} face embeddings onto GPU")
-else:
-    emb_matrix_gpu_normed = None
-    embeddings_db = _raw_db
-    print(f"[INFO] Loaded {len(embeddings_db)} face embeddings (CPU)")
+# Pre-normalise DB embeddings once at startup
+for user in embeddings_db:
+    norm = np.linalg.norm(user['embedding'])
+    if norm > 1e-8:
+        user['embedding'] = user['embedding'] / norm
+    print(f"  → {user['name']}  dim={len(user['embedding'])}  norm={np.linalg.norm(user['embedding']):.4f}")
 
 
-# ----------------- GPU-ACCELERATED MATCHING ----------------- #
+# ----------------- FACE MATCHING (NumPy) ----------------- #
 
-def match_face_gpu(live_embedding_np):
+def match_face(live_embedding_np):
     """
-    Matches a live embedding against the database using CuPy (GPU).
-    Returns (name, user_id, score) or (None, None, -1).
-    """
-    if len(embeddings_db) == 0:
-        return None, None, -1.0
-
-    # Transfer single embedding to GPU and normalise
-    live_gpu = cp.asarray(live_embedding_np, dtype=cp.float32).reshape(1, -1)
-    live_norm = cp.linalg.norm(live_gpu)
-    if live_norm < 1e-8:
-        return None, None, -1.0
-    live_gpu /= live_norm
-
-    # Batched cosine similarity: (1, dim) @ (dim, N) -> (1, N)
-    scores = cp.dot(live_gpu, emb_matrix_gpu_normed.T).flatten()  # (N,)
-
-    best_idx = int(cp.argmax(scores))
-    best_score = float(scores[best_idx])
-
-    if best_score > SIMILARITY_THRESHOLD:
-        user = embeddings_db[best_idx]
-        return user['name'], user['user_id'], best_score
-    return None, None, best_score
-
-
-def match_face_cpu(live_embedding_np):
-    """
-    Fallback: CPU-based matching with NumPy.
-    Returns (name, user_id, score) or (None, None, -1).
+    Match a live embedding against DB using cosine similarity.
+    Returns (name, user_id, score) or (None, None, best_score).
     """
     if len(embeddings_db) == 0:
         return None, None, -1.0
@@ -91,8 +48,7 @@ def match_face_cpu(live_embedding_np):
     best_score = -1.0
     best_match = None
     for user in embeddings_db:
-        score = float(np.dot(live, user['embedding']) /
-                       (np.linalg.norm(user['embedding']) + 1e-8))
+        score = float(np.dot(live, user['embedding']))
         if score > best_score:
             best_score = score
             best_match = user
@@ -100,10 +56,6 @@ def match_face_cpu(live_embedding_np):
     if best_match and best_score > SIMILARITY_THRESHOLD:
         return best_match['name'], best_match['user_id'], best_score
     return None, None, best_score
-
-
-# Pick the right implementation
-match_face = match_face_gpu if GPU_MATCHING else match_face_cpu
 
 
 # ----------------- PIPELINE PROBE ----------------- #
@@ -122,10 +74,40 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
         except StopIteration:
             break
 
-        # Periodic status log
+        source_id = frame_meta.source_id
+
+        # ---- FPS Tracking ---- #
+        now = time.time()
+        if source_id not in fps_streams:
+            fps_streams[source_id] = {
+                'last_time': now, 'frame_count': 0, 'fps': 0.0}
+        fps_streams[source_id]['frame_count'] += 1
+        elapsed = now - fps_streams[source_id]['last_time']
+        if elapsed >= 1.0:
+            fps_streams[source_id]['fps'] = (
+                fps_streams[source_id]['frame_count'] / elapsed)
+            fps_streams[source_id]['frame_count'] = 0
+            fps_streams[source_id]['last_time'] = now
+        current_fps = fps_streams[source_id]['fps']
+
+        # ---- Draw FPS on screen ---- #
+        display_meta = pyds.nvds_acquire_display_meta_from_pool(batch_meta)
+        display_meta.num_labels = 1
+        py_nvosd_text_params = display_meta.text_params[0]
+        py_nvosd_text_params.display_text = f"FPS: {current_fps:.1f}"
+        py_nvosd_text_params.x_offset = 10
+        py_nvosd_text_params.y_offset = 12
+        py_nvosd_text_params.font_params.font_name = "Serif"
+        py_nvosd_text_params.font_params.font_size = 14
+        py_nvosd_text_params.font_params.font_color.set(0.0, 1.0, 0.0, 1.0)
+        py_nvosd_text_params.set_bg_clr = 1
+        py_nvosd_text_params.text_bg_clr.set(0.0, 0.0, 0.0, 0.7)
+        pyds.nvds_add_display_meta_to_frame(frame_meta, display_meta)
+
+        # Periodic console log
         if frame_meta.frame_num % 30 == 0:
-            print(f"[cam {frame_meta.source_id}] Frame {frame_meta.frame_num} | "
-                  f"Faces: {frame_meta.num_obj_meta}")
+            print(f"[cam {source_id}] Frame {frame_meta.frame_num} | "
+                  f"Faces: {frame_meta.num_obj_meta} | FPS: {current_fps:.1f}")
 
         l_obj = frame_meta.obj_meta_list
         while l_obj is not None:
@@ -148,11 +130,23 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                         ptr = ctypes.cast(
                             pyds.get_ptr(layer.buffer),
                             ctypes.POINTER(ctypes.c_float))
-                        v = np.ctypeslib.as_array(
-                            ptr, shape=(layer.inferDims.d[0],))
+                        emb_dim = layer.inferDims.d[0]
+                        v = np.ctypeslib.as_array(ptr, shape=(emb_dim,))
                         live_embedding = np.copy(v)
 
+                        # Debug: print embedding stats for first 5 frames
+                        if frame_meta.frame_num < 5:
+                            print(f"  [DEBUG] Embedding dim={emb_dim}  "
+                                  f"norm={np.linalg.norm(live_embedding):.4f}  "
+                                  f"first5={live_embedding[:5]}")
+
                         name, user_id, score = match_face(live_embedding)
+
+                        # Debug: always print match result for first 10 frames
+                        if frame_meta.frame_num < 10:
+                            print(f"  [DEBUG] Best match: name={name}  "
+                                  f"score={score:.4f}  "
+                                  f"threshold={SIMILARITY_THRESHOLD}")
 
                         if name is not None:
                             # ---- RECOGNISED ---- #
@@ -162,17 +156,15 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                                 0.0, 1.0, 0.0, 1.0)  # Green
                             obj_meta.rect_params.border_width = 4
 
-                            # Text styling
                             obj_meta.text_params.font_params.font_name = "Serif"
                             obj_meta.text_params.font_params.font_size = 12
                             obj_meta.text_params.font_params.font_color.set(
-                                1.0, 1.0, 1.0, 1.0)  # White text
+                                1.0, 1.0, 1.0, 1.0)
                             obj_meta.text_params.set_bg_clr = 1
                             obj_meta.text_params.text_bg_clr.set(
-                                0.0, 0.4, 0.0, 0.6)  # Dark green bg
+                                0.0, 0.4, 0.0, 0.6)
 
                             # Attendance logging with cooldown
-                            now = time.time()
                             if (user_id not in last_logged or
                                     now - last_logged[user_id] > COOLDOWN_SEC):
                                 log_attendance(
@@ -182,7 +174,6 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                                       f"cam {frame_meta.source_id}")
 
                             recognised = True
-                        # If name is None, we fall through to "Unknown"
                 except Exception as e:
                     print(f"[PROBE ERROR] {e}")
 
@@ -191,7 +182,7 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                 except StopIteration:
                     break
 
-            # ---- NOT RECOGNISED  →  Show "Unknown" ---- #
+            # ---- NOT RECOGNISED → Show "Unknown" ---- #
             if not recognised:
                 obj_meta.text_params.display_text = "Unknown"
                 obj_meta.rect_params.border_color.set(
@@ -201,10 +192,10 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                 obj_meta.text_params.font_params.font_name = "Serif"
                 obj_meta.text_params.font_params.font_size = 12
                 obj_meta.text_params.font_params.font_color.set(
-                    1.0, 1.0, 1.0, 1.0)  # White text
+                    1.0, 1.0, 1.0, 1.0)
                 obj_meta.text_params.set_bg_clr = 1
                 obj_meta.text_params.text_bg_clr.set(
-                    0.6, 0.0, 0.0, 0.6)  # Dark red bg
+                    0.6, 0.0, 0.0, 0.6)
 
             try:
                 l_obj = l_obj.next
@@ -304,10 +295,9 @@ def main(args):
     Gst.init(None)
 
     print("=" * 60)
-    print("  JETSON NANO — GPU Face Recognition Pipeline")
+    print("  JETSON NANO — Face Recognition Pipeline")
     print("=" * 60)
     print(f"  Sources       : {num_sources}")
-    print(f"  GPU Matching  : {'YES (CuPy)' if GPU_MATCHING else 'NO (NumPy CPU)'}")
     print(f"  Enrolled Faces: {len(embeddings_db)}")
     print(f"  Threshold     : {SIMILARITY_THRESHOLD}")
     print("=" * 60)
