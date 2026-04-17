@@ -165,7 +165,7 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                         layer = pyds.get_nvds_LayerInfo(tensor_meta, 0)
                         ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
 
-                        emb_dim = layer.inferDims.d[0]
+                        emb_dim = layer.dims.d[0]
                         v = np.ctypeslib.as_array(ptr, shape=(emb_dim,))
                         
                         # ---> DUMP THE EMBEDDING HERE <---
