@@ -1,11 +1,5 @@
 """
 enroll_trt.py — Enroll faces with preprocessing that matches the SGIE exactly.
-
-Usage:
-    python3 enroll_trt.py <path_to_face_image> <person_name>
-    python3 enroll_trt.py aditya.jpg Aditya
-
-Dependencies: onnxruntime, opencv-python, numpy (all already installed)
 """
 
 import os
@@ -19,10 +13,16 @@ from db_utils import init_db, save_embedding
 MODEL_PATH = "models/w600k_mbf.onnx"
 
 def preprocess_face(img):
+    """
+    MUST match SGIE config exactly:
+      model-color-format=0         -> BGR/RGB Alignment
+      net-scale-factor=0.0078125   -> 1/128
+      offsets=127.5;127.5;127.5
+      infer-dims=3;112;112
+    """
     img = cv2.resize(img, (112, 112))
     
-    # --- ADD THIS LINE ---
-    # Convert BGR to RGB to match DeepStream's model-color-format=0
+    # CRITICAL: Convert BGR to RGB to match DeepStream's live feed
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
     img = img.astype(np.float32)
@@ -30,25 +30,6 @@ def preprocess_face(img):
     img = np.transpose(img, (2, 0, 1))  # HWC -> CHW
     img = np.expand_dims(img, axis=0)   # (1, 3, 112, 112)
     return np.ascontiguousarray(img, dtype=np.float32)
-
-# def preprocess_face(img):
-#     """
-#     MUST match SGIE config exactly:
-#       model-color-format=0         -> BGR (do NOT convert to RGB)
-#       net-scale-factor=0.0078125   -> 1/128
-#       offsets=127.5;127.5;127.5
-#       infer-dims=3;112;112
-
-#     Formula per pixel: (pixel - 127.5) / 128.0
-#     """
-#     img = cv2.resize(img, (112, 112))
-#     # IMPORTANT: Keep BGR — matches sgie_config model-color-format=0
-#     img = img.astype(np.float32)
-#     img = (img - 127.5) / 128.0
-#     img = np.transpose(img, (2, 0, 1))  # HWC -> CHW
-#     img = np.expand_dims(img, axis=0)   # (1, 3, 112, 112)
-#     return np.ascontiguousarray(img, dtype=np.float32)
-
 
 def enroll(image_path, name):
     """Extract embedding and save to database."""
@@ -72,7 +53,7 @@ def enroll(image_path, name):
     session = ort.InferenceSession(MODEL_PATH, providers=providers)
     input_name = session.get_inputs()[0].name
 
-    # Preprocess (BGR, same as SGIE)
+    # Preprocess
     input_data = preprocess_face(img)
 
     print(f"Processing: {image_path}")
@@ -91,7 +72,6 @@ def enroll(image_path, name):
     # Save to database
     save_embedding(name, embedding)
     print(f"\nSUCCESS: Enrolled '{name}' into database.")
-
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

@@ -61,6 +61,24 @@ def match_face(live_embedding_np):
         return best_match['name'], best_match['user_id'], best_score
     return None, None, best_score
 
+def dump_sgie_embedding(live_embedding_np):
+    """
+    Dumps the live SGIE array to the terminal in the exact same 
+    format as enroll_trt.py so you can compare them side-by-side.
+    """
+    norm_v = np.linalg.norm(live_embedding_np)
+    if norm_v > 1e-8:
+        normalized = live_embedding_np / norm_v
+    else:
+        normalized = live_embedding_np
+        
+    print("\n" + "▼"*50)
+    print("🔴 LIVE SGIE EMBEDDING DUMP")
+    print(f"  Dimension : {len(normalized)}")
+    print(f"  L2 Norm   : {np.linalg.norm(normalized):.6f}")
+    print(f"  First 5   : {normalized[:5]}")
+    print("▲"*50 + "\n")
+    return normalized
 
 # ----------------- PIPELINE PROBE ----------------- #
 
@@ -106,7 +124,7 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
         py_nvosd_text_params.x_offset = 10
         py_nvosd_text_params.y_offset = 12
         py_nvosd_text_params.font_params.font_name = "Serif"
-        py_nvosd_text_params.font_params.font_size = 14
+        py_nvosd_text_params.font_params.font_size = 11
         py_nvosd_text_params.font_params.font_color.set(0.0, 1.0, 0.0, 1.0)
         py_nvosd_text_params.set_bg_clr = 1
         py_nvosd_text_params.text_bg_clr.set(0.0, 0.0, 0.0, 0.7)
@@ -130,74 +148,58 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
             has_tensor_meta = False
             l_user_meta = obj_meta.obj_user_meta_list
 
-            if l_user_meta is None and debug_print:
-                print(f"  [WARN] Frame {frame_counter}: "
-                      f"Face detected (class_id={obj_meta.class_id}) but NO user_meta (SGIE not running?)")
+            # --- DEBUG: IS SGIE FIRING? ---
+            if l_user_meta is None:
+                if debug_print:
+                    print(f"  [WARN] Frame {frame_counter}: Face detected, but NO SGIE metadata attached! (SGIE is ignoring this face)")
 
             while l_user_meta is not None:
                 try:
                     user_meta = pyds.NvDsUserMeta.cast(l_user_meta.data)
                     meta_type = user_meta.base_meta.meta_type
-                    expected_type = pyds.nvds_get_user_meta_type(
-                            "NVDSINFER_TENSOR_OUTPUT_META")
-
-                    if meta_type == expected_type:
+                    
+                    if meta_type == pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META:
                         has_tensor_meta = True
-                        tensor_meta = pyds.NvDsInferTensorMeta.cast(
-                            user_meta.user_meta_data)
+                        tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
+                        
                         layer = pyds.get_nvds_LayerInfo(tensor_meta, 0)
-                        ptr = ctypes.cast(
-                            pyds.get_ptr(layer.buffer),
-                            ctypes.POINTER(ctypes.c_float))
+                        ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
 
                         emb_dim = layer.inferDims.d[0]
                         v = np.ctypeslib.as_array(ptr, shape=(emb_dim,))
-                        live_embedding = np.copy(v)
+                        
+                        # ---> DUMP THE EMBEDDING HERE <---
+                        if debug_print: 
+                            live_embedding = dump_sgie_embedding(v)
+                        else:
+                            live_embedding = np.copy(v)
+                            norm = np.linalg.norm(live_embedding)
+                            if norm > 0: live_embedding /= norm
 
                         name, user_id, score = match_face(live_embedding)
 
-                        # Print debug every 30 frames
                         if debug_print:
-                            print(f"  [LIVE ] dim={emb_dim}  "
-                                  f"norm={np.linalg.norm(live_embedding):.4f}  "
-                                  f"first5={live_embedding[:5]}")
-                            if len(embeddings_db) > 0:
-                                db_emb = embeddings_db[0]['embedding']
-                                print(f"  [DB   ] dim={len(db_emb)}  "
-                                      f"norm={np.linalg.norm(db_emb):.4f}  "
-                                      f"first5={db_emb[:5]}  "
-                                      f"name={embeddings_db[0]['name']}")
-                            if len(embeddings_db) > 0 and emb_dim != len(embeddings_db[0]['embedding']):
-                                print(f"  [ERROR] DIMENSION MISMATCH! "
-                                      f"Live={emb_dim} vs DB={len(embeddings_db[0]['embedding'])}")
                             print(f"  [MATCH] score={score:.4f}  "
                                   f"threshold={SIMILARITY_THRESHOLD}  "
                                   f"result={'RECOGNISED' if name else 'UNKNOWN'}")
 
                         if name is not None:
                             # ---- RECOGNISED ---- #
-                            obj_meta.text_params.display_text = (
-                                f"{name} ({score:.2f})")
-                            obj_meta.rect_params.border_color.set(
-                                0.0, 1.0, 0.0, 1.0)  # Green
+                            obj_meta.text_params.display_text = f"{name} ({score:.2f})"
+                            obj_meta.rect_params.border_color.set(0.0, 1.0, 0.0, 1.0)  # Green
                             obj_meta.rect_params.border_width = 4
 
                             obj_meta.text_params.font_params.font_name = "Serif"
                             obj_meta.text_params.font_params.font_size = 12
-                            obj_meta.text_params.font_params.font_color.set(
-                                1.0, 1.0, 1.0, 1.0)
+                            obj_meta.text_params.font_params.font_color.set(1.0, 1.0, 1.0, 1.0)
                             obj_meta.text_params.set_bg_clr = 1
-                            obj_meta.text_params.text_bg_clr.set(
-                                0.0, 0.4, 0.0, 0.6)
+                            obj_meta.text_params.text_bg_clr.set(0.0, 0.4, 0.0, 0.6)
 
                             # Attendance logging with cooldown
-                            if (user_id not in last_logged or
-                                    now - last_logged[user_id] > COOLDOWN_SEC):
-                                log_attendance(
-                                    user_id, frame_meta.source_id)
+                            if (user_id not in last_logged or now - last_logged[user_id] > COOLDOWN_SEC):
+                                log_attendance(user_id, frame_meta.source_id)
                                 last_logged[user_id] = now
-                                print(f"[ATTENDANCE] {name} logged on "
-                                      f"cam {frame_meta.source_id}")
+                                print(f"[ATTENDANCE] {name} logged on cam {frame_meta.source_id}")
 
                             recognised = True
                 except Exception as e:
@@ -211,17 +213,14 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
             # ---- NOT RECOGNISED → Show "Unknown" ---- #
             if not recognised:
                 obj_meta.text_params.display_text = "Unknown"
-                obj_meta.rect_params.border_color.set(
-                    1.0, 0.0, 0.0, 1.0)  # Red
+                obj_meta.rect_params.border_color.set(1.0, 0.0, 0.0, 1.0)  # Red
                 obj_meta.rect_params.border_width = 3
 
                 obj_meta.text_params.font_params.font_name = "Serif"
                 obj_meta.text_params.font_params.font_size = 12
-                obj_meta.text_params.font_params.font_color.set(
-                    1.0, 1.0, 1.0, 1.0)
+                obj_meta.text_params.font_params.font_color.set(1.0, 1.0, 1.0, 1.0)
                 obj_meta.text_params.set_bg_clr = 1
-                obj_meta.text_params.text_bg_clr.set(
-                    0.6, 0.0, 0.0, 0.6)
+                obj_meta.text_params.text_bg_clr.set(0.6, 0.0, 0.0, 0.6)
 
             try:
                 l_obj = l_obj.next
@@ -261,8 +260,7 @@ def create_source_bin(index, uri):
         sys.stderr.write("Unable to create source bin\n")
 
     if uri.startswith("rtsp://"):
-        uri_decode_bin = Gst.ElementFactory.make(
-            "uridecodebin", "uri-decode-bin")
+        uri_decode_bin = Gst.ElementFactory.make("uridecodebin", "uri-decode-bin")
         if not uri_decode_bin:
             sys.stderr.write("Unable to create uri decode bin\n")
         uri_decode_bin.set_property("uri", uri)
@@ -278,29 +276,26 @@ def create_source_bin(index, uri):
         # V4L2 USB Camera (e.g. /dev/video0)
         v4l2src = Gst.ElementFactory.make("v4l2src", f"v4l2src_{index}")
         v4l2src.set_property("device", uri)
-        vidconv = Gst.ElementFactory.make("videoconvert", f"vidconv_{index}")
-        nvvidconv = Gst.ElementFactory.make(
-            "nvvideoconvert", f"nvvidconv_{index}")
+        
+        # Hardware accelerated converter
+        nvvidconv = Gst.ElementFactory.make("nvvideoconvert", f"nvvidconv_{index}")
         capsfilter = Gst.ElementFactory.make("capsfilter", f"caps_{index}")
-        caps = Gst.Caps.from_string(
-            "video/x-raw(memory:NVMM), format=(string)NV12")
+        
+        # Lower resolution for much better performance on Nano
+        caps = Gst.Caps.from_string("video/x-raw(memory:NVMM), width=640, height=480, format=NV12")
         capsfilter.set_property("caps", caps)
 
         Gst.Bin.add(nbin, v4l2src)
-        Gst.Bin.add(nbin, vidconv)
         Gst.Bin.add(nbin, nvvidconv)
         Gst.Bin.add(nbin, capsfilter)
 
-        v4l2src.link(vidconv)
-        vidconv.link(nvvidconv)
+        v4l2src.link(nvvidconv)
         nvvidconv.link(capsfilter)
 
-    bin_pad = nbin.add_pad(
-        Gst.GhostPad.new_no_target("src", Gst.PadDirection.SRC))
+    bin_pad = nbin.add_pad(Gst.GhostPad.new_no_target("src", Gst.PadDirection.SRC))
 
     if not uri.startswith("rtsp://"):
-        nbin.get_static_pad("src").set_target(
-            capsfilter.get_static_pad("src"))
+        nbin.get_static_pad("src").set_target(capsfilter.get_static_pad("src"))
 
     return nbin
 
@@ -310,9 +305,6 @@ def create_source_bin(index, uri):
 def main(args):
     if len(args) < 2:
         print("Usage: python3 main_dual_cam.py <cam1_uri> [cam2_uri ...]")
-        print("  Examples:")
-        print("    python3 main_dual_cam.py /dev/video0")
-        print("    python3 main_dual_cam.py /dev/video0 /dev/video1")
         sys.exit(1)
 
     sources = args[1:]
@@ -329,67 +321,45 @@ def main(args):
     print("=" * 60)
 
     # ---- Pre-flight: Check model files ---- #
-    print("\n[CHECK] Verifying model files...")
     pgie_onnx = "/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx"
     pgie_engine = "/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine"
     sgie_onnx = "/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx"
     sgie_engine = "/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b1_gpu0_fp16.engine"
 
-    for label, path in [("PGIE ONNX", pgie_onnx), ("PGIE Engine", pgie_engine),
-                        ("SGIE ONNX", sgie_onnx), ("SGIE Engine", sgie_engine)]:
-        exists = os.path.exists(path)
-        size = os.path.getsize(path) if exists else 0
-        status = f"OK ({size} bytes)" if exists else "MISSING!"
-        print(f"  {label:12s}: {status}  [{path}]")
-
-    if not os.path.exists(sgie_onnx):
-        print("\n[FATAL] SGIE ONNX model is MISSING! Face recognition will NOT work.")
-        print("  Download w600k_mbf.onnx and place it in models/ directory.")
-    print()
-
     pipeline = Gst.Pipeline()
 
     # ---- Stream Muxer ---- #
     streammux = Gst.ElementFactory.make("nvstreammux", "Stream-muxer")
-    streammux.set_property('width', 1280)
-    streammux.set_property('height', 720)
+    streammux.set_property('width', 640)
+    streammux.set_property('height', 480)
     streammux.set_property('batch-size', num_sources)
     streammux.set_property('batched-push-timeout', MUXER_BATCH_TIMEOUT_USEC)
-    # Keep buffers in GPU memory
-    streammux.set_property('nvbuf-memory-type', 0)  # 0 = NVBUF_MEM_DEFAULT (GPU)
+    streammux.set_property('nvbuf-memory-type', 0)  
     pipeline.add(streammux)
 
     # ---- Source Bins ---- #
     for i in range(num_sources):
         source_bin = create_source_bin(i, sources[i])
-        if not source_bin:
-            sys.stderr.write("Unable to create source bin\n")
         pipeline.add(source_bin)
         padname = f"sink_{i}"
         sinkpad = streammux.get_request_pad(padname)
-        if not sinkpad:
-            sys.stderr.write("Unable to create sink pad bin\n")
         srcpad = source_bin.get_static_pad("src")
-        if not srcpad:
-            sys.stderr.write("Unable to create src pad bin\n")
         srcpad.link(sinkpad)
 
-    # ---- Primary GIE (YOLOv8-face) — runs on GPU via TensorRT ---- #
+    # ---- Primary GIE (YOLOv8-face) ---- #
     print("Creating Primary GIE (YOLOv8 Face)...")
     pgie = Gst.ElementFactory.make("nvinfer", "primary-inference")
     pgie.set_property('config-file-path', "configs/pgie_config.txt")
 
-    # ---- Tracker (IOU tracker — lightweight, GPU-friendly) ---- #
+    # ---- Tracker (IOU tracker) ---- #
     print("Creating Tracker...")
     tracker = Gst.ElementFactory.make("nvtracker", "tracker")
-    tracker.set_property(
-        'll-lib-file',
-        '/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so')
+    tracker.set_property('ll-lib-file', '/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so')
     tracker.set_property('ll-config-file', 'configs/tracker_config.yml')
     tracker.set_property('tracker-width', 640)
     tracker.set_property('tracker-height', 640)
 
-    # ---- Secondary GIE (MobileFaceNet) — runs on GPU via TensorRT ---- #
+    # ---- Secondary GIE (MobileFaceNet) ---- #
     print("Creating Secondary GIE (MobileFaceNet)...")
     sgie = Gst.ElementFactory.make("nvinfer", "secondary-nvinference-engine")
     sgie.set_property('config-file-path', "configs/sgie_config.txt")
@@ -409,7 +379,6 @@ def main(args):
     nvvidconv = Gst.ElementFactory.make("nvvideoconvert", "convertor")
     nvosd = Gst.ElementFactory.make("nvdsosd", "onscreendisplay")
 
-    # EGL sink for Jetson display
     transform = Gst.ElementFactory.make("nvegltransform", "nvegl-transform")
     sink = Gst.ElementFactory.make("nveglglessink", "nvvideo-renderer")
     sink.set_property('sync', False)
@@ -417,7 +386,6 @@ def main(args):
 
     # ---- Add everything to pipeline ---- #
     print("Adding elements to Pipeline...")
-    # ADDED TRACKER HERE:
     for elem in [pgie, tracker, sgie, tiler, nvvidconv, nvosd]:
         pipeline.add(elem)
     if transform:
@@ -427,7 +395,6 @@ def main(args):
     # ---- Link the pipeline ---- #
     print("Linking elements in Pipeline...")
     streammux.link(pgie)
-    # LINKED TRACKER HERE:
     pgie.link(tracker)
     tracker.link(sgie)
     sgie.link(tiler)
@@ -440,14 +407,12 @@ def main(args):
     else:
         nvosd.link(sink)
 
-    # ---- Probe on SGIE source pad for recognition logic ---- #
-    # It is MUCH better to do this before the tiler merges frame metadata
+    # ---- Probe on SGIE source pad ---- #
     sgie_src_pad = sgie.get_static_pad("src")
     if not sgie_src_pad:
         sys.stderr.write("Unable to get src pad of sgie\n")
     else:
-        sgie_src_pad.add_probe(
-            Gst.PadProbeType.BUFFER, osd_sink_pad_buffer_probe, 0)
+        sgie_src_pad.add_probe(Gst.PadProbeType.BUFFER, osd_sink_pad_buffer_probe, 0)
 
     # ---- Run ---- #
     loop = GLib.MainLoop()
