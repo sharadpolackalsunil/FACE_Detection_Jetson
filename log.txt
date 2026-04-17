@@ -2,7 +2,4 @@
 [PROBE ERROR] 'pyds.NvDsInferLayerInfo' object has no attribute 'inferDims'
 [cam 0] Frame 360 | Faces: 3 | FPS: 23.3
 [PROBE ERROR] 'pyds.NvDsInferLayerInfo' object has no attribute 'inferDims'
-  [WARN] Frame 360: Face detected, but NO SGIE metadata attached! (SGIE is ignoring this face)
-  [WARN] Frame 360: Face detected, but NO SGIE metadata attached! (SGIE is ignoring this face)
-
   python3 main_dual_cam.py /dev/video0
