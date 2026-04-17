@@ -109,6 +109,9 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
             print(f"[cam {source_id}] Frame {frame_meta.frame_num} | "
                   f"Faces: {frame_meta.num_obj_meta} | FPS: {current_fps:.1f}")
 
+        # Should we print debug this frame?
+        debug_print = (frame_meta.frame_num % 30 == 0)
+
         l_obj = frame_meta.obj_meta_list
         while l_obj is not None:
             try:
@@ -118,35 +121,52 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
 
             # ---- Attempt Recognition via SGIE tensor output ---- #
             recognised = False
+            has_tensor_meta = False
             l_user_meta = obj_meta.obj_user_meta_list
+
+            if l_user_meta is None and debug_print:
+                print(f"  [WARN] Frame {frame_meta.frame_num}: "
+                      f"Face detected but NO user_meta (SGIE not running?)")
+
             while l_user_meta is not None:
                 try:
                     user_meta = pyds.NvDsUserMeta.cast(l_user_meta.data)
-                    if user_meta.base_meta.meta_type == pyds.nvds_get_user_meta_type(
-                            "NVDSINFER_TENSOR_OUTPUT_META"):
+                    meta_type = user_meta.base_meta.meta_type
+                    expected_type = pyds.nvds_get_user_meta_type(
+                            "NVDSINFER_TENSOR_OUTPUT_META")
+
+                    if meta_type == expected_type:
+                        has_tensor_meta = True
                         tensor_meta = pyds.NvDsInferTensorMeta.cast(
                             user_meta.user_meta_data)
                         layer = pyds.get_nvds_LayerInfo(tensor_meta, 0)
                         ptr = ctypes.cast(
                             pyds.get_ptr(layer.buffer),
                             ctypes.POINTER(ctypes.c_float))
+
                         emb_dim = layer.inferDims.d[0]
                         v = np.ctypeslib.as_array(ptr, shape=(emb_dim,))
                         live_embedding = np.copy(v)
 
-                        # Debug: print embedding stats for first 5 frames
-                        if frame_meta.frame_num < 5:
-                            print(f"  [DEBUG] Embedding dim={emb_dim}  "
-                                  f"norm={np.linalg.norm(live_embedding):.4f}  "
-                                  f"first5={live_embedding[:5]}")
-
                         name, user_id, score = match_face(live_embedding)
 
-                        # Debug: always print match result for first 10 frames
-                        if frame_meta.frame_num < 10:
-                            print(f"  [DEBUG] Best match: name={name}  "
-                                  f"score={score:.4f}  "
-                                  f"threshold={SIMILARITY_THRESHOLD}")
+                        # Print debug every 30 frames
+                        if debug_print:
+                            print(f"  [LIVE ] dim={emb_dim}  "
+                                  f"norm={np.linalg.norm(live_embedding):.4f}  "
+                                  f"first5={live_embedding[:5]}")
+                            if len(embeddings_db) > 0:
+                                db_emb = embeddings_db[0]['embedding']
+                                print(f"  [DB   ] dim={len(db_emb)}  "
+                                      f"norm={np.linalg.norm(db_emb):.4f}  "
+                                      f"first5={db_emb[:5]}  "
+                                      f"name={embeddings_db[0]['name']}")
+                            if len(embeddings_db) > 0 and emb_dim != len(embeddings_db[0]['embedding']):
+                                print(f"  [ERROR] DIMENSION MISMATCH! "
+                                      f"Live={emb_dim} vs DB={len(embeddings_db[0]['embedding'])}")
+                            print(f"  [MATCH] score={score:.4f}  "
+                                  f"threshold={SIMILARITY_THRESHOLD}  "
+                                  f"result={'RECOGNISED' if name else 'UNKNOWN'}")
 
                         if name is not None:
                             # ---- RECOGNISED ---- #
