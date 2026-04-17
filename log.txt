@@ -8,3 +8,5 @@
   [WARN] Frame 0: Face detected but NO user_meta (SGIE not running?)
   [WARN] Frame 0: Face detected but NO user_meta (SGIE not running?)
   [WARN] Frame 0: Face detected but NO user_meta (SGIE not running?)
+
+  python3 main_dual_cam.py /dev/video0
