@@ -1,5 +1,6 @@
 import gi
 import sys
+import os
 import ctypes
 import math
 import time
@@ -9,6 +10,9 @@ from gi.repository import Gst, GLib
 import pyds
 
 from db_utils import load_all_embeddings, log_attendance
+
+# Manual frame counter (frame_meta.frame_num can be unreliable)
+frame_counter = 0
 
 # ----------------- GLOBALS & CONSTANTS ----------------- #
 COOLDOWN_SEC = 300        # 5 minutes between re-logging same person
@@ -76,6 +80,10 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
 
         source_id = frame_meta.source_id
 
+        # Use manual frame counter
+        global frame_counter
+        frame_counter += 1
+
         # ---- FPS Tracking ---- #
         now = time.time()
         if source_id not in fps_streams:
@@ -104,13 +112,11 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
         py_nvosd_text_params.text_bg_clr.set(0.0, 0.0, 0.0, 0.7)
         pyds.nvds_add_display_meta_to_frame(frame_meta, display_meta)
 
-        # Periodic console log
-        if frame_meta.frame_num % 30 == 0:
-            print(f"[cam {source_id}] Frame {frame_meta.frame_num} | "
+        # Print debug every 30 frames
+        debug_print = (frame_counter % 30 == 0)
+        if debug_print:
+            print(f"[cam {source_id}] Frame {frame_counter} | "
                   f"Faces: {frame_meta.num_obj_meta} | FPS: {current_fps:.1f}")
-
-        # Should we print debug this frame?
-        debug_print = (frame_meta.frame_num % 30 == 0)
 
         l_obj = frame_meta.obj_meta_list
         while l_obj is not None:
@@ -125,8 +131,8 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
             l_user_meta = obj_meta.obj_user_meta_list
 
             if l_user_meta is None and debug_print:
-                print(f"  [WARN] Frame {frame_meta.frame_num}: "
-                      f"Face detected but NO user_meta (SGIE not running?)")
+                print(f"  [WARN] Frame {frame_counter}: "
+                      f"Face detected (class_id={obj_meta.class_id}) but NO user_meta (SGIE not running?)")
 
             while l_user_meta is not None:
                 try:
@@ -321,6 +327,25 @@ def main(args):
     print(f"  Enrolled Faces: {len(embeddings_db)}")
     print(f"  Threshold     : {SIMILARITY_THRESHOLD}")
     print("=" * 60)
+
+    # ---- Pre-flight: Check model files ---- #
+    print("\n[CHECK] Verifying model files...")
+    pgie_onnx = "/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx"
+    pgie_engine = "/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine"
+    sgie_onnx = "/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx"
+    sgie_engine = "/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b1_gpu0_fp16.engine"
+
+    for label, path in [("PGIE ONNX", pgie_onnx), ("PGIE Engine", pgie_engine),
+                        ("SGIE ONNX", sgie_onnx), ("SGIE Engine", sgie_engine)]:
+        exists = os.path.exists(path)
+        size = os.path.getsize(path) if exists else 0
+        status = f"OK ({size} bytes)" if exists else "MISSING!"
+        print(f"  {label:12s}: {status}  [{path}]")
+
+    if not os.path.exists(sgie_onnx):
+        print("\n[FATAL] SGIE ONNX model is MISSING! Face recognition will NOT work.")
+        print("  Download w600k_mbf.onnx and place it in models/ directory.")
+    print()
 
     pipeline = Gst.Pipeline()
 
