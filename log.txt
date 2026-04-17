@@ -1,0 +1,7 @@
+[cam 0] Frame 0 | Faces: 3 | FPS: 2.4
+  [WARN] Frame 0: Face detected but NO user_meta (SGIE not running?)
+[cam 0] Frame 0 | Faces: 3 | FPS: 2.4
+  [WARN] Frame 0: Face detected but NO user_meta (SGIE not running?)
+[cam 0] Frame 0 | Faces: 3 | FPS: 2.4
+  [WARN] Frame 0: Face detected but NO user_meta (SGIE not running?)
+[NvMultiObjectTracker] De-initialized
