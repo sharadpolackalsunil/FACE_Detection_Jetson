@@ -1,26 +1,45 @@
 [property]
 gpu-id=0
-# Listen specifically to the YOLO detector (ID 1)
+
+# ---- SGIE Identity ---- #
+# Listen specifically to the YOLO detector (GIE ID 1, class 0 = face)
 operate-on-gie-id=1
 operate-on-class-ids=0
 gie-unique-id=2
 
-# FaceNet Normalization: (x - 127.5) * 0.0078125
+# ---- MobileFaceNet Preprocessing ---- #
+# Normalization: (pixel - 127.5) * 0.0078125 = (pixel - 127.5) / 128
 net-scale-factor=0.0078125
 offsets=127.5;127.5;127.5
 model-color-format=0
 
+# ---- Model Files ---- #
 onnx-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx
-model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b1_gpu0_fp16.engine
+model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b16_gpu0_fp16.engine
 
-# Secondary Mode Configuration
+# ---- Secondary Classifier Mode ---- #
 process-mode=2
 network-mode=2
-# CRITICAL: Must be 1 for Python embeddings
-output-tensor-meta=1
-batch-size=1
-infer-dims=3;112;112
 network-type=100
 
-input-object-min-width=16
-input-object-min-height=16
+# CRITICAL: output-tensor-meta=1 attaches raw tensor to NvDsObjectMeta
+# so Python can read the 512-D (or 128-D) embedding via ctypes.
+output-tensor-meta=1
+
+# ---- FIX #1: batch-size must accommodate max simultaneous faces ---- #
+# With batch-size=1, only ONE face crop is inferred per batch cycle.
+# Additional faces get stale/garbage tensor pointers → "Unknown".
+# Set to 16 to handle up to 16 faces across all streams per batch.
+batch-size=16
+
+# ---- FIX #2: maintain-aspect-ratio prevents crop distortion ---- #
+# Without this, non-square face detections get aggressively stretched
+# to 112x112, destroying the embedding geometry.
+maintain-aspect-ratio=1
+
+# ---- Input Dimensions ---- #
+infer-dims=3;112;112
+
+# ---- Minimum crop size to avoid garbage micro-crops ---- #
+input-object-min-width=32
+input-object-min-height=32
