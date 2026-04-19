@@ -10,7 +10,9 @@
 ### Enroll Faces (in venv)
 ```bash
 source venv/bin/activate
-python3 enroll_trt.py face_image.jpg "Person Name"
+python3 enroll_trt.py sharad.jpg "Sharad"
+python3 enroll_trt.py aditya.jpg "Aditya"
+python3 enroll_trt.py RAJ.jpg "Raj"
 deactivate
 ```
 
