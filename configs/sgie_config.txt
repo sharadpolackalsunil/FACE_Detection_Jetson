@@ -15,7 +15,7 @@ model-color-format=0
 
 # ---- Model Files ---- #
 onnx-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx
-model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b16_gpu0_fp16.engine
+# model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b16_gpu0_fp16.engine
 
 # ---- Secondary Classifier Mode ---- #
 process-mode=2
@@ -25,6 +25,10 @@ network-type=100
 # CRITICAL: output-tensor-meta=1 attaches raw tensor to NvDsObjectMeta
 # so Python can read the 512-D (or 128-D) embedding via ctypes.
 output-tensor-meta=1
+
+# Ensure it processes synchronously and bypasses static batch issues
+classifier-async-mode=0
+force-implicit-batch-dim=1
 
 # ---- FIX #1: batch-size must accommodate max simultaneous faces ---- #
 # With batch-size=1, only ONE face crop is inferred per batch cycle.
