@@ -263,36 +263,111 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
             while l_user_meta is not None:
                 try:
                     user_meta = pyds.NvDsUserMeta.cast(l_user_meta.data)
-                    if user_meta.base_meta.meta_type == pyds.nvds_get_user_meta_type("NVDSINFER_TENSOR_OUTPUT_META"):
-                        tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
-                        layer = pyds.get_nvds_LayerInfo(tensor_meta, 0)
-                        ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
-                        v = np.ctypeslib.as_array(ptr, shape=(layer.inferDims.d[0],))
-                        
-                        live_embedding = np.copy(v)
-                        norm = np.linalg.norm(live_embedding)
-                        if norm > 0:
-                            live_embedding /= norm
-                            
-                            best_match = None
-                            best_score = -1
-                            for user in embeddings_db:
-                                score = cosine_similarity(live_embedding, user['embedding'])
-                                if score > best_score:
-                                    best_score = score
-                                    best_match = user
-                            
-                            if best_match and best_score > SIMILARITY_THRESHOLD:
-                                # Log attendance... (same as your previous logic)
+                except StopIteration:
+                    break
 
-                except Exception as e:
-                    print("Probe Error:", e)
-                
-                l_user_meta = l_user_meta.next
-            
-            l_obj = l_obj.next
-        l_frame = l_frame.next
-            
+                meta_type = user_meta.base_meta.meta_type
+
+                if meta_type == pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META:
+                    tensor_meta = pyds.NvDsInferTensorMeta.cast(
+                        user_meta.user_meta_data)
+
+                    # Only accept tensors from our SGIE (gie-unique-id=2)
+                    if tensor_meta.unique_id != 2:
+                        try:
+                            l_user_meta = l_user_meta.next
+                        except StopIteration:
+                            break
+                        continue
+
+                    layer = pyds.get_nvds_LayerInfo(tensor_meta, 0)
+                    ptr = ctypes.cast(
+                        pyds.get_ptr(layer.buffer),
+                        ctypes.POINTER(ctypes.c_float))
+
+                    # Dynamic dimension: supports both 128-D and 512-D
+                    emb_dim = layer.dims.d[0]
+                    if emb_dim <= 0:
+                        emb_dim = layer.dims.numElements
+
+                    # CRITICAL: np.copy() to own the data before the
+                    # pointer becomes invalid on the next buffer cycle
+                    live_embedding = np.copy(
+                        np.ctypeslib.as_array(ptr, shape=(emb_dim,)))
+
+                    # Normalize
+                    norm = np.linalg.norm(live_embedding)
+                    if norm > 1e-8:
+                        live_embedding /= norm
+
+                    print(f"  [DEBUG EMBEDDING OUT] obj_id={obj_id}  dim={emb_dim}  "
+                          f"norm={np.linalg.norm(live_embedding):.4f}  "
+                          f"first5={live_embedding[:5]}")
+
+                    # Vectorized match against entire watchlist
+                    name, user_id, score = match_face_vectorized(
+                        live_embedding)
+
+                    # Print match results every time now so we can actually see the scores debug
+                    tag = 'RECOGNISED' if name else 'UNKNOWN'
+                    print(f"  [MATCH] obj_id={obj_id}  "
+                          f"score={score:.4f}  thresh={SIMILARITY_THRESHOLD}  "
+                          f"→ {tag}")
+
+                    if name is not None:
+                        _apply_recognised_overlay(obj_meta, name, score)
+                        # Cache this tracked ID
+                        track_id_cache[obj_id] = (
+                            name, score, frame_counter)
+                        # Attendance
+                        if (user_id not in last_logged
+                                or now - last_logged[user_id] > COOLDOWN_SEC):
+                            log_attendance(user_id, source_id)
+                            last_logged[user_id] = now
+                            print(f"[ATTENDANCE] {name} "
+                                  f"logged on cam {source_id}")
+                        recognised = True
+                    else:
+                        # Cache as Unknown so we don't re-process
+                        track_id_cache[obj_id] = (
+                            None, score, frame_counter)
+
+                    # We found the tensor for this obj — stop iterating
+                    break
+
+                try:
+                    l_user_meta = l_user_meta.next
+                except StopIteration:
+                    break
+
+            if not recognised:
+                _apply_unknown_overlay(obj_meta)
+                # Ensure we cache failed/skipped SGIE inferences so they don't spam the console infinitely
+                if obj_id not in track_id_cache:
+                    track_id_cache[obj_id] = (None, 0.0, frame_counter)
+
+            try:
+                l_obj = l_obj.next
+            except StopIteration:
+                break
+
+        # ---- Periodic Cache Eviction ---- #
+        if frame_counter % CACHE_EVICT_INTERVAL == 0:
+            stale_ids = [
+                oid for oid, (_, _, last_seen) in track_id_cache.items()
+                if (frame_counter - last_seen) > CACHE_STALE_FRAMES
+            ]
+            for oid in stale_ids:
+                del track_id_cache[oid]
+            if stale_ids and debug_print:
+                print(f"  [CACHE] Evicted {len(stale_ids)} stale ID(s), "
+                      f"remaining: {len(track_id_cache)}")
+
+        try:
+            l_frame = l_frame.next
+        except StopIteration:
+            break
+
     return Gst.PadProbeReturn.OK
 
 
