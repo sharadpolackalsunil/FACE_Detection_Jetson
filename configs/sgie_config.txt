@@ -2,9 +2,9 @@
 gpu-id=0
 
 # ---- SGIE Identity ---- #
-# Listen specifically to the YOLO detector (GIE ID 1, class 0 = face)
+# Listen specifically to the YOLO detector
 operate-on-gie-id=1
-operate-on-class-ids=0
+# operate-on-class-ids=0
 gie-unique-id=2
 
 # ---- MobileFaceNet Preprocessing ---- #
@@ -41,5 +41,5 @@ maintain-aspect-ratio=1
 infer-dims=3;112;112
 
 # ---- Minimum crop size to avoid garbage micro-crops ---- #
-input-object-min-width=32
-input-object-min-height=32
+# input-object-min-width=32
+# input-object-min-height=32
