@@ -3,7 +3,7 @@ gpu-id=0
 net-scale-factor=0.0039215697906911373
 model-color-format=0
 onnx-file=/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx
-# model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b16_gpu0_fp16.engine
+model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b16_gpu0_fp16.engine
 labelfile-path=/home/blackbox/FACE_Detection_Jetson/labels.txt
 
 # Detection Parameters
@@ -17,7 +17,7 @@ network-type=0
 cluster-mode=2
 maintain-aspect-ratio=1
 # force-implicit-batch-dim=0 (disabled for explicit batch size)
-batch-size=1
+batch-size=16
 interval=2
 process-mode=1
 
