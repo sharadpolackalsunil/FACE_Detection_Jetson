@@ -17,8 +17,9 @@ network-type=0
 cluster-mode=2
 maintain-aspect-ratio=1
 force-implicit-batch-dim=1
-batch-size=1
-interval=4
+batch-size=16
+interval=2
+process-mode = 2
 
 # Custom Parser Settings
 parse-bbox-func-name=NvDsInferParseYolo

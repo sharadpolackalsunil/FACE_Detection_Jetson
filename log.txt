@@ -1,5 +1,36 @@
 
-[PROBE ERROR] 'pyds.NvDsInferLayerInfo' object has no attribute 'inferDims'
-[cam 0] Frame 360 | Faces: 3 | FPS: 23.3
-[PROBE ERROR] 'pyds.NvDsInferLayerInfo' object has no attribute 'inferDims'
+Using winsys: x11 
+0:00:06.170061099  7567   0x7f5c003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<secondary-nvinference-engine> NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:1900> [UID = 2]: deserialized trt engine from :/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b16_gpu0_fp16.engine
+INFO: [FullDims Engine Info]: layers num: 2
+0   INPUT  kFLOAT input.1         3x112x112       min: 1x3x112x112     opt: 16x3x112x112    Max: 16x3x112x112    
+1   OUTPUT kFLOAT 516             512             min: 0               opt: 0               Max: 0               
+
+0:00:06.171382275  7567   0x7f5c003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<secondary-nvinference-engine> NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2004> [UID = 2]: Use deserialized engine model: /home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b16_gpu0_fp16.engine
+0:00:06.212901833  7567   0x7f5c003ac0 INFO                 nvinfer gstnvinfer_impl.cpp:313:notifyLoadModelStatus:<secondary-nvinference-engine> [UID 2]: Load new model:configs/sgie_config.txt sucessfully
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+gstnvtracker: Batch processing is ON
+gstnvtracker: Past frame output is OFF
+!! [WARNING][NvTrackerParamsBase] Unknown param found: maxTargetsPerStream
+!! [WARNING][NvTrackerParamsBase] Unknown param found: trackerWidth
+!! [WARNING][NvTrackerParamsBase] Unknown param found: trackerHeight
+!! [WARNING][NvTrackerParamsBase] Unknown param found: gpuId
+[NvMultiObjectTracker] Initialized
+ERROR: Deserialize engine failed because file path: /home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine open error
+0:00:06.722176568  7567   0x7f5c003ac0 WARN                 nvinfer gstnvinfer.cpp:635:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Warning from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:1889> [UID = 1]: deserialize engine from file :/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine failed
+0:00:06.723152476  7567   0x7f5c003ac0 WARN                 nvinfer gstnvinfer.cpp:635:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Warning from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:1996> [UID = 1]: deserialize backend context from engine from file :/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine failed, try rebuild
+0:00:06.723198311  7567   0x7f5c003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::buildModel() <nvdsinfer_context_impl.cpp:1914> [UID = 1]: Trying to create engine from model files
+ERROR: [TRT]: ModelImporter.cpp:779: ERROR: ModelImporter.cpp:578 In function importModel:
+[4] Assertion failed: !_importer_ctx.network()->hasImplicitBatchDimension() && "This version of the ONNX parser only supports TensorRT INetworkDefinitions with an explicit batch dimension. Please ensure the network was created using the EXPLICIT_BATCH NetworkDefinitionCreationFlag."
+ERROR: Failed to parse onnx file
+ERROR: failed to build network since parsing model errors.
+ERROR: failed to build network.
+0:00:07.330500828  7567   0x7f5c003ac0 ERROR                nvinfer gstnvinfer.cpp:632:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Error in NvDsInferContextImpl::buildModel() <nvdsinfer_context_impl.cpp:1934> [UID = 1]: build engine file failed
+0:00:07.331582520  7567   0x7f5c003ac0 ERROR                nvinfer gstnvinfer.cpp:632:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Error in NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2020> [UID = 1]: build backend context failed
+0:00:07.331633719  7567   0x7f5c003ac0 ERROR                nvinfer gstnvinfer.cpp:632:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Error in NvDsInferContextImpl::initialize() <nvdsinfer_context_impl.cpp:1257> [UID = 1]: generate backend failed, check config file settings
+0:00:07.331687783  7567   0x7f5c003ac0 WARN                 nvinfer gstnvinfer.cpp:841:gst_nvinfer_start:<primary-inference> error: Failed to create NvDsInferContext instance
+0:00:07.331715387  7567   0x7f5c003ac0 WARN                 nvinfer gstnvinfer.cpp:841:gst_nvinfer_start:<primary-inference> error: Config file path: configs/pgie_config.txt, NvDsInfer Error: NVDSINFER_CONFIG_FAILED
+[NvMultiObjectTracker] De-initialized
+[ERROR] gst-resource-error-quark: Failed to create NvDsInferContext instance (1): /dvs/git/dirty/git-master_linux/deepstream/sdk/src/gst-plugins/gst-nvinfer/gstnvinfer.cpp(841): gst_nvinfer_start (): /GstPipeline:pipeline0/GstNvInfer:primary-inference:
+Config file path: configs/pgie_config.txt, NvDsInfer Error: NVDSINFER_CONFIG_FAILED
+Exiting app...
   python3 main_dual_cam.py /dev/video0
