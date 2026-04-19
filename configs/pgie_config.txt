@@ -32,3 +32,5 @@ pre-cluster-threshold=0.15
 pre-cluster-threshold=0.15
 nms-iou-threshold=0.45
 topk=20
+min-bbox-width=32
+min-bbox-height=32

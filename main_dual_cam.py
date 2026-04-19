@@ -334,6 +334,9 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
 
             if not recognised:
                 _apply_unknown_overlay(obj_meta)
+                # Ensure we cache failed/skipped SGIE inferences so they don't spam the console infinitely
+                if obj_id not in track_id_cache:
+                    track_id_cache[obj_id] = (None, 0.0, frame_counter)
 
             try:
                 l_obj = l_obj.next
