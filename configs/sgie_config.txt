@@ -27,14 +27,13 @@ network-type=100
 output-tensor-meta=1
 
 # Ensure it processes synchronously and bypasses static batch issues
-classifier-async-mode=0
-force-implicit-batch-dim=1
-
+# classifier-async-mode is not supported for network-type=100 in DS6.0
+# force-implicit-batch dim unsupported for Opset 11 ONNX
 # ---- FIX #1: batch-size must accommodate max simultaneous faces ---- #
 # With batch-size=1, only ONE face crop is inferred per batch cycle.
 # Additional faces get stale/garbage tensor pointers → "Unknown".
 # Set to 16 to handle up to 16 faces across all streams per batch.
-batch-size=16
+batch-size=1
 
 # ---- FIX #2: maintain-aspect-ratio prevents crop distortion ---- #
 # Without this, non-square face detections get aggressively stretched
