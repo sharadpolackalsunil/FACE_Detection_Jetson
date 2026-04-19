@@ -40,6 +40,7 @@ batch-size=1
 # Without this, non-square face detections get aggressively stretched
 # to 112x112, destroying the embedding geometry.
 maintain-aspect-ratio=1
+symmetric-padding=1
 
 # ---- Input Dimensions ---- #
 infer-dims=3;112;112
