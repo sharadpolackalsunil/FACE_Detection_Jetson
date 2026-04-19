@@ -231,16 +231,24 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                             last_logged[uid] = now
                             print(f"[ATTENDANCE] {cached_name} "
                                   f"logged on cam {source_id}")
+                                  
+                    # Skip expensive tensor work since we ALREADY know who they are
+                    try:
+                        l_obj = l_obj.next
+                    except StopIteration:
+                        break
+                    continue
                 else:
                     # ---- UNKNOWN (cached) ---- #
                     _apply_unknown_overlay(obj_meta)
-
-                # Skip the expensive tensor work
-                try:
-                    l_obj = l_obj.next
-                except StopIteration:
-                    break
-                continue
+                    # Retry SGIE match periodically (every 5 frames) to give them a second chance!
+                    if frame_counter % 5 != 0:
+                        try:
+                            l_obj = l_obj.next
+                        except StopIteration:
+                            break
+                        continue
+                    # Else: Drop through and let SGIE run again!
 
             # --------------------------------------------------- #
             #  CACHE MISS — Must extract SGIE tensor & match       #
@@ -300,11 +308,11 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                     name, user_id, score = match_face_vectorized(
                         live_embedding)
 
-                    if debug_print:
-                        tag = 'RECOGNISED' if name else 'UNKNOWN'
-                        print(f"  [MATCH] obj_id={obj_id}  "
-                              f"score={score:.4f}  thresh={SIMILARITY_THRESHOLD}  "
-                              f"→ {tag}")
+                    # Print match results every time now so we can actually see the scores debug
+                    tag = 'RECOGNISED' if name else 'UNKNOWN'
+                    print(f"  [MATCH] obj_id={obj_id}  "
+                          f"score={score:.4f}  thresh={SIMILARITY_THRESHOLD}  "
+                          f"→ {tag}")
 
                     if name is not None:
                         _apply_recognised_overlay(obj_meta, name, score)
