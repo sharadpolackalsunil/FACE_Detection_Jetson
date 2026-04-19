@@ -248,9 +248,9 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
             recognised = False
             l_user_meta = obj_meta.obj_user_meta_list
 
-            if l_user_meta is None and debug_print:
+            if l_user_meta is None:
                 print(f"  [WARN] obj_id={obj_id}: No SGIE metadata "
-                      f"(SGIE may not have processed this face yet)")
+                      f"(SGIE skipped! Class={obj_meta.class_id}, Box={int(obj_meta.rect_params.width)}x{int(obj_meta.rect_params.height)})")
 
             while l_user_meta is not None:
                 try:
@@ -292,10 +292,9 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                     if norm > 1e-8:
                         live_embedding /= norm
 
-                    if debug_print:
-                        print(f"  [SGIE] obj_id={obj_id}  dim={emb_dim}  "
-                              f"norm={np.linalg.norm(live_embedding):.4f}  "
-                              f"first3={live_embedding[:3]}")
+                    print(f"  [DEBUG EMBEDDING OUT] obj_id={obj_id}  dim={emb_dim}  "
+                          f"norm={np.linalg.norm(live_embedding):.4f}  "
+                          f"first5={live_embedding[:5]}")
 
                     # Vectorized match against entire watchlist
                     name, user_id, score = match_face_vectorized(
