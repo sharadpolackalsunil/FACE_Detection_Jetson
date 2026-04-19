@@ -15,7 +15,7 @@ model-color-format=0
 
 # ---- Model Files ---- #
 onnx-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx
-model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b16_gpu0_fp16.engine
+model-engine-file=/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b1_gpu0_fp16.engine
 
 # ---- Secondary Classifier Mode ---- #
 process-mode=2
