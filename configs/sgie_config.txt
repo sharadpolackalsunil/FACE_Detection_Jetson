@@ -25,7 +25,7 @@ network-type=100
 # CRITICAL: output-tensor-meta=1 attaches raw tensor to NvDsObjectMeta
 # so Python can read the 512-D (or 128-D) embedding via ctypes.
 output-tensor-meta=1
-output-blob-names=embeddings
+output-blob-names=516
 
 # Ensure it processes synchronously and bypasses static batch issues
 # classifier-async-mode is not supported for network-type=100 in DS6.0
