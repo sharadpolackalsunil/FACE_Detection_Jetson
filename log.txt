@@ -1,12 +1,23 @@
 
-Using winsys: x11 
-0:00:06.170061099  7567   0x7f5c003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<secondary-nvinference-engine> NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:1900> [UID = 2]: deserialized trt engine from :/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b16_gpu0_fp16.engine
-INFO: [FullDims Engine Info]: layers num: 2
-0   INPUT  kFLOAT input.1         3x112x112       min: 1x3x112x112     opt: 16x3x112x112    Max: 16x3x112x112    
-1   OUTPUT kFLOAT 516             512             min: 0               opt: 0               Max: 0               
+Creating Primary GIE (YOLOv8 Face)...
+Creating Tracker...
+Creating Secondary GIE (MobileFaceNet)...
+Creating Tiler...
+Creating Converter & OSD & Sink...
+Adding elements to Pipeline...
+Linking elements in Pipeline...
 
-0:00:06.171382275  7567   0x7f5c003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<secondary-nvinference-engine> NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2004> [UID = 2]: Use deserialized engine model: /home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b16_gpu0_fp16.engine
-0:00:06.212901833  7567   0x7f5c003ac0 INFO                 nvinfer gstnvinfer_impl.cpp:313:notifyLoadModelStatus:<secondary-nvinference-engine> [UID 2]: Load new model:configs/sgie_config.txt sucessfully
+Starting pipeline — press Ctrl+C to stop
+
+
+Using winsys: x11 
+0:00:11.654104942 14404   0x7f78003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<secondary-nvinference-engine> NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:1900> [UID = 2]: deserialized trt engine from :/home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b1_gpu0_fp16.engine
+INFO: [Implicit Engine Info]: layers num: 2
+0   INPUT  kFLOAT input.1         3x112x112       
+1   OUTPUT kFLOAT 516             512             
+
+0:00:11.655432263 14404   0x7f78003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<secondary-nvinference-engine> NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2004> [UID = 2]: Use deserialized engine model: /home/blackbox/FACE_Detection_Jetson/models/w600k_mbf.onnx_b1_gpu0_fp16.engine
+0:00:11.689218691 14404   0x7f78003ac0 INFO                 nvinfer gstnvinfer_impl.cpp:313:notifyLoadModelStatus:<secondary-nvinference-engine> [UID 2]: Load new model:configs/sgie_config.txt sucessfully
 gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
 gstnvtracker: Batch processing is ON
 gstnvtracker: Past frame output is OFF
@@ -15,22 +26,232 @@ gstnvtracker: Past frame output is OFF
 !! [WARNING][NvTrackerParamsBase] Unknown param found: trackerHeight
 !! [WARNING][NvTrackerParamsBase] Unknown param found: gpuId
 [NvMultiObjectTracker] Initialized
-ERROR: Deserialize engine failed because file path: /home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine open error
-0:00:06.722176568  7567   0x7f5c003ac0 WARN                 nvinfer gstnvinfer.cpp:635:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Warning from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:1889> [UID = 1]: deserialize engine from file :/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine failed
-0:00:06.723152476  7567   0x7f5c003ac0 WARN                 nvinfer gstnvinfer.cpp:635:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Warning from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:1996> [UID = 1]: deserialize backend context from engine from file :/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b1_gpu0_fp16.engine failed, try rebuild
-0:00:06.723198311  7567   0x7f5c003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::buildModel() <nvdsinfer_context_impl.cpp:1914> [UID = 1]: Trying to create engine from model files
-ERROR: [TRT]: ModelImporter.cpp:779: ERROR: ModelImporter.cpp:578 In function importModel:
-[4] Assertion failed: !_importer_ctx.network()->hasImplicitBatchDimension() && "This version of the ONNX parser only supports TensorRT INetworkDefinitions with an explicit batch dimension. Please ensure the network was created using the EXPLICIT_BATCH NetworkDefinitionCreationFlag."
-ERROR: Failed to parse onnx file
-ERROR: failed to build network since parsing model errors.
-ERROR: failed to build network.
-0:00:07.330500828  7567   0x7f5c003ac0 ERROR                nvinfer gstnvinfer.cpp:632:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Error in NvDsInferContextImpl::buildModel() <nvdsinfer_context_impl.cpp:1934> [UID = 1]: build engine file failed
-0:00:07.331582520  7567   0x7f5c003ac0 ERROR                nvinfer gstnvinfer.cpp:632:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Error in NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2020> [UID = 1]: build backend context failed
-0:00:07.331633719  7567   0x7f5c003ac0 ERROR                nvinfer gstnvinfer.cpp:632:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Error in NvDsInferContextImpl::initialize() <nvdsinfer_context_impl.cpp:1257> [UID = 1]: generate backend failed, check config file settings
-0:00:07.331687783  7567   0x7f5c003ac0 WARN                 nvinfer gstnvinfer.cpp:841:gst_nvinfer_start:<primary-inference> error: Failed to create NvDsInferContext instance
-0:00:07.331715387  7567   0x7f5c003ac0 WARN                 nvinfer gstnvinfer.cpp:841:gst_nvinfer_start:<primary-inference> error: Config file path: configs/pgie_config.txt, NvDsInfer Error: NVDSINFER_CONFIG_FAILED
-[NvMultiObjectTracker] De-initialized
-[ERROR] gst-resource-error-quark: Failed to create NvDsInferContext instance (1): /dvs/git/dirty/git-master_linux/deepstream/sdk/src/gst-plugins/gst-nvinfer/gstnvinfer.cpp(841): gst_nvinfer_start (): /GstPipeline:pipeline0/GstNvInfer:primary-inference:
-Config file path: configs/pgie_config.txt, NvDsInfer Error: NVDSINFER_CONFIG_FAILED
+0:00:13.264368598 14404   0x7f78003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:1900> [UID = 1]: deserialized trt engine from :/home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b16_gpu0_fp16.engine
+INFO: [FullDims Engine Info]: layers num: 2
+0   INPUT  kFLOAT images          3x640x640       min: 1x3x640x640     opt: 16x3x640x640    Max: 16x3x640x640    
+1   OUTPUT kFLOAT output0         5x8400          min: 0               opt: 0               Max: 0               
+
+0:00:13.265544457 14404   0x7f78003ac0 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<primary-inference> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2004> [UID = 1]: Use deserialized engine model: /home/blackbox/FACE_Detection_Jetson/models/yolov8n-face.onnx_b16_gpu0_fp16.engine
+0:00:13.598710508 14404   0x7f78003ac0 INFO                 nvinfer gstnvinfer_impl.cpp:313:notifyLoadModelStatus:<primary-inference> [UID 1]: Load new model:configs/pgie_config.txt sucessfully
+0:00:14.422537985 14404      0x946af70 WARN          v4l2bufferpool gstv4l2bufferpool.c:790:gst_v4l2_buffer_pool_start:<v4l2src_0:pool:src> Uncertain or not enough buffers, enabling copy threshold
+0:01:07.368568962 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:911:gst_v4l2src_create:<v4l2src_0> Timestamp does not correlate with any clock, ignoring driver timestamps
+0:01:19.731252212 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 4 - ts: 0:01:06.097276244
+0:01:19.734718643 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1548 - ts: 0:01:06.101816345
+0:01:19.743601444 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 371 - ts: 0:01:06.110700865
+0:01:21.893844476 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 6 - ts: 0:01:08.260876135
+0:01:22.425760590 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 54 - ts: 0:01:08.792850532
+0:01:22.477772889 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 14 - ts: 0:01:08.844862362
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x21)
+0:01:23.214360467 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:09.581452075
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x21)
+0:01:23.227986602 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 13 - ts: 0:01:09.595073575
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x21)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x21)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x21)
+[cam 0] Frame 30 | Faces: 1 | FPS: 7.7 | Cache: 0 IDs
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x21)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x27)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x27)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x27)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x29)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x29)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x29)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x26)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x26)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x26)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [DEBUG EMBEDDING OUT] obj_id=1  dim=512  norm=1.0000  first5=[-0.03728784 -0.02738215  0.02218166 -0.03447533 -0.04351427]
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+[cam 0] Frame 60 | Faces: 2 | FPS: 0.6 | Cache: 1 IDs
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+0:01:27.774770350 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 89 - ts: 0:01:14.141831020
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+0:01:27.812836141 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:14.179928791
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x25)
+0:01:27.846631838 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:14.213722613
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:27.924892322 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 3 - ts: 0:01:14.291982733
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+0:01:28.100011777 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:14.467093541
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+0:01:28.128794550 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:14.495885273
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+0:01:28.228575043 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:14.595632692
+0:01:28.371142525 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:14.738240644
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x21)
+0:01:28.549762942 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:14.916852624
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x21)
+0:01:28.587769930 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:14.954869872
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x21)
+0:01:28.702090485 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:15.069176156
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:28.891393951 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:15.258480559
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:28.961206748 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:15.328305753
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+0:01:29.033713459 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:15.400808141
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [DEBUG EMBEDDING OUT] obj_id=2  dim=512  norm=1.0000  first5=[ 0.06624915  0.02090085 -0.00612908 -0.03420921  0.02709879]
+0:01:29.257196589 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:15.624292521
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+0:01:29.302501916 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:15.669594410
+[cam 0] Frame 90 | Faces: 3 | FPS: 18.6 | Cache: 2 IDs
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+0:01:29.426191897 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:15.793287151
+0:01:29.525876762 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:15.892962277
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:29.595625235 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:15.962715073
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:29.663074751 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.030166568
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:29.796150408 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.163221235
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:29.858943310 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.226014970
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:29.915767174 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.282864199
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+0:01:30.020553402 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.387193751
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+0:01:30.084746856 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.451843881
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+0:01:30.128376417 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.495473911
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+0:01:30.191773394 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:16.558864326
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+0:01:30.241698303 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.608790484
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+0:01:30.338294194 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.705385438
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+0:01:30.393340049 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.760431084
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:30.485622615 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.852713859
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:30.617356628 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:16.984447455
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+0:01:30.751245741 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:17.118339328
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:30.885752836 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:17.252846997
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+[cam 0] Frame 120 | Faces: 2 | FPS: 17.9 | Cache: 2 IDs
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+0:01:31.043544354 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:17.410637889
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:31.190118123 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:17.557209627
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:31.307162904 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:17.674128572
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:31.451521728 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:17.818615420
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:31.617042948 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:17.984133202
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+0:01:31.770819116 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:18.137883328
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:31.943493255 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:18.310563457
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:32.000428371 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:18.367520396
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x22)
+0:01:32.085470672 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:18.452568791
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x22)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:32.240288738 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:18.607388836
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x21)
+0:01:32.368717417 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:18.735795484
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x21)
+[cam 0] Frame 150 | Faces: 2 | FPS: 21.3 | Cache: 2 IDs
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x21)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+0:01:32.637122792 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:19.004215703
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x26)
+0:01:32.770654709 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:19.137713348
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x26)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x26)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x25)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x25)
+0:01:32.992590356 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:19.359661808
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=14x25)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:33.127764550 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:19.494859544
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+0:01:33.225840369 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:19.592932654
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:33.330348674 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:19.697421584
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:33.381847628 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:19.748936267
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:33.515453609 14404      0x946c280 WARN           nveglglessink gsteglglessink.c:911:gst_eglglessink_event_thread:<nvvideo-renderer> error: Output window was closed
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:33.526210097 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:19.893305143
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
+0:01:33.761790786 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 1 - ts: 0:01:20.128864061
+[ERROR] gst-resource-error-quark: Output window was closed (3): /dvs/git/dirty/git-master_linux/3rdparty/gst/gst-nveglglessink/ext/eglgles/gsteglglessink.c(911): gst_eglglessink_event_thread (): /GstPipeline:pipeline0/GstEglGlesSink:nvvideo-renderer
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x22)
 Exiting app...
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+0:01:33.879513186 14404      0x946af70 WARN                 v4l2src gstv4l2src.c:976:gst_v4l2src_create:<v4l2src_0> lost frames detected: count = 2 - ts: 0:01:20.246605211
+0:01:33.980984289 14404      0x946c280 WARN           nveglglessink gsteglglessink.c:911:gst_eglglessink_event_thread:<nvvideo-renderer> error: Output window was closed
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=12x23)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+  [WARN] obj_id=0: No SGIE metadata (SGIE skipped! Class=0, Box=13x24)
+[NvMultiObjectTracker] De-initialized
   python3 main_dual_cam.py /dev/video0
