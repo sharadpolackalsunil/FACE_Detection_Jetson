@@ -4,7 +4,7 @@ gpu-id=0
 # ---- SGIE Identity ---- #
 # Listen specifically to the YOLO detector
 operate-on-gie-id=1
-# operate-on-class-ids=0
+operate-on-class-ids=0
 gie-unique-id=2
 
 # ---- MobileFaceNet Preprocessing ---- #
