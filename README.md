@@ -109,11 +109,24 @@ The probe also filters tensor metadata by `tensor_meta.unique_id == 2` (SGIE's G
 ```
 FACE_Detection_Jetson/
 ├── main_dual_cam.py          # Main DeepStream pipeline (run with SYSTEM Python)
-├── db_utils.py               # SQLite helpers (Users table, Logs table)
-├── enroll_trt.py             # Offline face enrollment (run in venv)
+├── db_utils.py               # SQLite + CSV attendance logging with dedup
+├── enroll_trt.py             # Auto-enrollment from image_db/ (run in venv)
 ├── fix_onnx.py               # YOLOv8 ONNX compatibility fixer (if re-export needed)
 ├── labels.txt                # Single class label: "face"
 ├── attendance.db             # SQLite database (auto-created)
+├── attendance.csv            # CSV attendance log: Name, Date, Time (auto-created)
+│
+├── image_db/                 # Face images for enrollment
+│   ├── sharad/
+│   │   ├── sharad_1.jpg
+│   │   ├── sharad_2.jpg
+│   │   └── sharad_3.jpg
+│   ├── aditya/
+│   │   ├── aditya_1.jpg
+│   │   └── aditya_2.jpg
+│   └── raj/
+│       ├── raj_1.jpg
+│       └── raj_2.jpg
 │
 ├── configs/
 │   ├── pgie_config.txt       # YOLOv8n-face detector config
@@ -135,20 +148,31 @@ FACE_Detection_Jetson/
 
 ## Quick Start
 
-### 1. Enroll Faces (in venv)
-```bash
-source venv/bin/activate
-python3 enroll_trt.py sharad.jpg "Sharad"
-python3 enroll_trt.py aditya.jpg "Aditya"
-python3 enroll_trt.py RAJ.jpg "Raj"
-deactivate
+### 1. Add Face Images
+Place 3-4 photos per person (different angles) in the `image_db/` directory:
+```
+image_db/<student_name>/<student_name>_<index>.jpg
 ```
 
-### 2. Run Pipeline (SYSTEM Python — no venv!)
+### 2. Enroll Faces (in venv — auto-scan mode)
+```bash
+source venv/bin/activate
+python3 enroll_trt.py          # auto-scans image_db/, skips existing students
+deactivate
+```
+> Re-running is safe — already-enrolled students are completely skipped.
+
+### 3. Run Pipeline (SYSTEM Python — no venv!)
 ```bash
 deactivate 2>/dev/null
 python3 main_dual_cam.py /dev/video0
 ```
+
+### 4. View Attendance
+```bash
+cat attendance.csv
+```
+Output: `Name,Date,Time` — auto-deduped per 5-minute window.
 
 ---
 

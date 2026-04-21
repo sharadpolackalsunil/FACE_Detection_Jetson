@@ -227,7 +227,8 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                     if uid is not None:
                         if (uid not in last_logged
                                 or now - last_logged[uid] > COOLDOWN_SEC):
-                            log_attendance(uid, source_id)
+                            log_attendance(uid, source_id,
+                                          student_name=cached_name)
                             last_logged[uid] = now
                             print(f"[ATTENDANCE] {cached_name} "
                                   f"logged on cam {source_id}")
@@ -322,7 +323,8 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
                         # Attendance
                         if (user_id not in last_logged
                                 or now - last_logged[user_id] > COOLDOWN_SEC):
-                            log_attendance(user_id, source_id)
+                            log_attendance(user_id, source_id,
+                                          student_name=name)
                             last_logged[user_id] = now
                             print(f"[ATTENDANCE] {name} "
                                   f"logged on cam {source_id}")
@@ -375,7 +377,8 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
 
 def _apply_recognised_overlay(obj_meta, name, score):
     """Green box + name label for recognised faces."""
-    obj_meta.text_params.display_text = f"{name} ({score:.2f})"
+    display_name = name.split('_')[0]
+    obj_meta.text_params.display_text = f"{display_name} ({score:.2f})"
     obj_meta.rect_params.border_color.set(0.0, 1.0, 0.0, 1.0)
     obj_meta.rect_params.border_width = 4
     obj_meta.text_params.font_params.font_name  = "Serif"
