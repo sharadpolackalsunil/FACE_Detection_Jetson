@@ -432,7 +432,7 @@ def create_source_bin(index, uri):
     if not nbin:
         sys.stderr.write("Unable to create source bin\n")
 
-    if uri.startswith("rtsp://"):
+    if uri.startswith(("rtsp://", "http://", "https://", "file://")):
         uri_decode_bin = Gst.ElementFactory.make(
             "uridecodebin", "uri-decode-bin")
         if not uri_decode_bin:
@@ -471,7 +471,7 @@ def create_source_bin(index, uri):
     bin_pad = nbin.add_pad(
         Gst.GhostPad.new_no_target("src", Gst.PadDirection.SRC))
 
-    if not uri.startswith("rtsp://"):
+    if not uri.startswith(("rtsp://", "http://", "https://", "file://")):
         nbin.get_static_pad("src").set_target(
             capsfilter.get_static_pad("src"))
 
