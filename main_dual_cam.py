@@ -370,14 +370,6 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
         except StopIteration:
             break
 
-                except Exception as e:
-                    print("Probe Error:", e)
-                
-                l_user_meta = l_user_meta.next
-            
-            l_obj = l_obj.next
-        l_frame = l_frame.next
-            
     return Gst.PadProbeReturn.OK
 
 
