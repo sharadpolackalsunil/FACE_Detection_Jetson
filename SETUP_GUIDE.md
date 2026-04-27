@@ -26,15 +26,7 @@ Place 3-4 photos per person (different angles for best accuracy).
 ### 2. Enroll Faces (in venv — auto-scan mode)
 ```bash
 source venv/bin/activate
-<<<<<<< HEAD
-python3 enroll_trt.py sharad_front.jpg "Sharad_1"
-python3 enroll_trt.py sharad_left.jpg "Sharad_2"
-python3 enroll_trt.py sharad_right.jpg "Sharad_3"
-python3 enroll_trt.py aditya.jpg "Aditya"
-python3 enroll_trt.py RAJ.jpg "Raj"
-=======
 python3 enroll_trt.py
->>>>>>> sharad
 deactivate
 ```
 This automatically scans `image_db/`, skips students already enrolled, and averages embeddings from all images per student.

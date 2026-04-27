@@ -264,29 +264,6 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
             while l_user_meta is not None:
                 try:
                     user_meta = pyds.NvDsUserMeta.cast(l_user_meta.data)
-<<<<<<< HEAD
-                    if user_meta.base_meta.meta_type == pyds.nvds_get_user_meta_type("NVDSINFER_TENSOR_OUTPUT_META"):
-                        tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
-                        layer = pyds.get_nvds_LayerInfo(tensor_meta, 0)
-                        ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
-                        v = np.ctypeslib.as_array(ptr, shape=(layer.inferDims.d[0],))
-                        
-                        live_embedding = np.copy(v)
-                        norm = np.linalg.norm(live_embedding)
-                        if norm > 0:
-                            live_embedding /= norm
-                            
-                            best_match = None
-                            best_score = -1
-                            for user in embeddings_db:
-                                score = cosine_similarity(live_embedding, user['embedding'])
-                                if score > best_score:
-                                    best_score = score
-                                    best_match = user
-                            
-                            if best_match and best_score > SIMILARITY_THRESHOLD:
-                                # Log attendance... (same as your previous logic)
-=======
                 except StopIteration:
                     break
 
@@ -392,7 +369,6 @@ def osd_sink_pad_buffer_probe(pad, info, u_data):
             l_frame = l_frame.next
         except StopIteration:
             break
->>>>>>> sharad
 
                 except Exception as e:
                     print("Probe Error:", e)
@@ -464,10 +440,6 @@ def create_source_bin(index, uri):
     if not nbin:
         sys.stderr.write("Unable to create source bin\n")
 
-<<<<<<< HEAD
-    # Route all network streams and files to uridecodebin
-=======
->>>>>>> sharad
     if uri.startswith(("rtsp://", "http://", "https://", "file://")):
         uri_decode_bin = Gst.ElementFactory.make(
             "uridecodebin", "uri-decode-bin")
