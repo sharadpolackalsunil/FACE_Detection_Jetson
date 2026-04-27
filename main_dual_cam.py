@@ -636,6 +636,5 @@ def main(args):
     print("Exiting app...")
     pipeline.set_state(Gst.State.NULL)
 
-
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
