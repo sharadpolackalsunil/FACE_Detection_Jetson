@@ -9,12 +9,13 @@
 
 | Component | Status | Details |
 |---|---|---|
-| `main_dual_cam.py` | ✅ Rewritten | Tracker cache, vectorized matching, multi-face fix |
+| `main_dual_cam.py` | ✅ Rewritten | Tracker cache, vectorized matching, multi-face fix, CSV attendance |
 | `configs/sgie_config.txt` | ✅ Updated | batch-size=16, maintain-aspect-ratio=1 |
 | `configs/pgie_config.txt` | ✅ Ready | YOLOv8n-face with custom parser |
 | `configs/tracker_config.yml` | ✅ Ready | IOU tracker, low GPU usage |
-| `db_utils.py` | ✅ Ready | SQLite Users + Logs tables |
-| `enroll_trt.py` | ✅ Ready | Offline enrollment via ONNX Runtime |
+| `db_utils.py` | ✅ Updated | SQLite Users + Logs tables + CSV attendance logging with dedup |
+| `enroll_trt.py` | ✅ Updated | Auto-scan `image_db/` dirs, idempotent, multi-image averaging |
+| `image_db/` | ✅ Created | Directory-based face storage: `image_db/<name>/<name>_N.jpg` |
 | `labels.txt` | ✅ Ready | Single "face" class |
 | `README.md` | ✅ Created | Full architecture docs |
 
@@ -107,19 +108,43 @@ pip install numpy opencv-python onnxruntime
 python3 -c "import numpy; import cv2; import onnxruntime; print('venv OK')"
 ```
 
-### Phase 5: Enroll Faces
+### Phase 5: Prepare Face Images
+
+Create the `image_db/` directory structure with 3-4 photos per person
+(different angles improve accuracy):
+
+```bash
+cd /home/blackbox/FACE_Detection_Jetson
+
+# Directory structure (already created — just add your images)
+# image_db/
+# ├── sharad/
+# │   ├── sharad_1.jpg   (front-facing)
+# │   ├── sharad_2.jpg   (slight left)
+# │   └── sharad_3.jpg   (slight right)
+# ├── aditya/
+# │   ├── aditya_1.jpg
+# │   └── aditya_2.jpg
+# └── raj/
+#     ├── raj_1.jpg
+#     └── raj_2.jpg
+```
+
+> **Naming:** Any `.jpg`, `.jpeg`, `.png`, or `.bmp` file inside a student's folder
+> will be auto-detected. The recommended naming convention is `<name>_<index>.jpg`.
+
+### Phase 6: Enroll Faces (Auto-Scan)
 
 ```bash
 cd /home/blackbox/FACE_Detection_Jetson
 source venv/bin/activate
 
-# Initialize the database
-python3 -c "from db_utils import init_db; init_db(); print('DB ready')"
+# Auto-enroll ALL students from image_db/ in one command
+python3 enroll_trt.py
 
-# Enroll each person (one clear face photo per person)
-python3 enroll_trt.py sharad.jpg "Sharad"
-python3 enroll_trt.py aditya.jpg "Aditya"
-python3 enroll_trt.py RAJ.jpg "Raj"
+# Idempotency: Re-running this is safe — already-enrolled students are
+# automatically skipped with ZERO changes to their existing DB entry.
+# Only new folders/students will be processed.
 
 # Verify enrollments
 python3 -c "
@@ -133,7 +158,10 @@ print(f'Total: {len(users)} enrolled faces')
 deactivate  # IMPORTANT: deactivate venv before running pipeline
 ```
 
-### Phase 6: Run the Pipeline (SYSTEM Python!)
+> **Legacy mode:** You can still enroll a single image manually:
+> `python3 enroll_trt.py path/to/image.jpg "Name"`
+
+### Phase 7: Run the Pipeline (SYSTEM Python!)
 
 ```bash
 cd /home/blackbox/FACE_Detection_Jetson
@@ -154,13 +182,38 @@ python3 main_dual_cam.py /dev/video0 /dev/video1
 
 ## 🔍 Verifying Everything Works
 
-### Expected Console Output (Healthy Pipeline)
+### Expected Enrollment Output
+
+```
+============================================================
+  AUTO-ENROLLMENT from image_db/
+============================================================
+  Found 3 student folder(s): ['aditya', 'raj', 'sharad']
+
+  [ENROLL] 'aditya' — processing 3 image(s)...
+    ✓ aditya_1.jpg  dim=512  norm=1.0000  first5=[...]
+    ✓ aditya_2.jpg  dim=512  norm=1.0000  first5=[...]
+    ✓ aditya_3.jpg  dim=512  norm=1.0000  first5=[...]
+    → Fused 3 embedding(s): dim=512  norm=1.0000
+    ✓ SUCCESS: 'aditya' enrolled into database
+
+  [SKIP] 'raj' — already enrolled in DB (no changes made)
+  [SKIP] 'sharad' — already enrolled in DB (no changes made)
+============================================================
+  ENROLLMENT COMPLETE
+    New enrollments : 1
+    Skipped (exists): 2
+    Total in DB     : 3
+============================================================
+```
+
+### Expected Pipeline Output (Healthy)
 
 ```
 [INFO] Loaded 3 enrolled face(s) from database
-  → Sharad  dim=512  norm=1.0000
-  → Aditya  dim=512  norm=1.0000
-  → Raj     dim=512  norm=1.0000
+  → sharad   dim=512  norm=1.0000
+  → aditya   dim=512  norm=1.0000
+  → raj      dim=512  norm=1.0000
 [INFO] Watchlist matrix built: (3, 512)  (N=3, D=512)
 ============================================================
   JETSON NANO — Face Recognition Pipeline  (v2)
@@ -171,17 +224,25 @@ python3 main_dual_cam.py /dev/video0 /dev/video1
   Watchlist Matrix: READY (3, 512)
   Cache Eviction  : every 100 frames (stale > 150 frames)
 ============================================================
-Creating Primary GIE (YOLOv8 Face)...
-Creating Tracker...
-Creating Secondary GIE (MobileFaceNet)...
 ...
 Starting pipeline — press Ctrl+C to stop
 
 [cam 0] Frame 30 | Faces: 1 | FPS: 22.1 | Cache: 1 IDs
   [SGIE] obj_id=1  dim=512  norm=1.0000  first3=[0.032 -0.015 0.048]
   [MATCH] obj_id=1  score=0.7823  thresh=0.40  → RECOGNISED
-[ATTENDANCE] Sharad logged on cam 0
+[ATTENDANCE] sharad logged on cam 0
 ```
+
+### Expected `attendance.csv` Output
+
+```csv
+Name,Date,Time
+sharad,2026-04-20,14:32:05
+aditya,2026-04-20,14:33:12
+raj,2026-04-20,14:35:47
+```
+
+> Duplicate entries for the same student within 5 minutes are automatically suppressed.
 
 ### Signs of Problems
 
@@ -250,3 +311,5 @@ Starting pipeline — press Ctrl+C to stop
 3. **Enrollment and pipeline must use the SAME `w600k_mbf.onnx`**
 4. **First TensorRT rebuild is slow** (~5-8 min) — don't kill the process
 5. **Check camera index:** `v4l2-ctl --list-devices`
+6. **Re-running `enroll_trt.py` is safe** — students already in the DB are fully skipped
+7. **Attendance CSV** (`attendance.csv`) auto-deduplicates per 5-minute window
